@@ -1,0 +1,125 @@
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from typing import Optional, List
+from sqlalchemy import ForeignKey
+class Base(DeclarativeBase):
+    pass
+
+class Company(Base):
+    __tablename__ ="company"
+    id:Mapped[int]= mapped_column(primary_key=True)
+    name:Mapped[str]=mapped_column(nullable=True)
+    product:Mapped[List["Product"]] = relationship(back_populates="company",cascade="all, delete-orphan")
+
+    def __repr__(self) -> str:
+        return (
+            f"Company(id={self.id!r}, name={self.name!r})"
+        )
+
+class Category(Base):
+    __tablename__="category"
+    id:Mapped[int]= mapped_column(primary_key=True)
+    name:Mapped[str]=mapped_column(nullable=True)
+    product:Mapped[List["Product"]] = relationship(back_populates="category",cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"Category(id={self.id!r}, name={self.name!r})"
+    
+class Product(Base):
+    __tablename__="product"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    name:Mapped[str]=mapped_column(nullable=True)
+    price:Mapped[float]=mapped_column(nullable=True)
+    stock_quantity:Mapped[int]=mapped_column(nullable=True)
+    description:Mapped[int]=mapped_column(nullable=True)
+    company_id:Mapped[int]=mapped_column(ForeignKey("company.id"))
+    category_id:Mapped[int]=mapped_column(ForeignKey("category.id"))
+    company:Mapped["Company"]=relationship(back_populates="product")
+    category:Mapped["Category"]=relationship(back_populates="product")
+    cart_item:Mapped["Cart_Item"]=relationship(back_populates="product")
+
+    def __repr__(self):
+        return f"Product(id={self.id!r}, name={self.name!r}, price={self.price!r}, stock_quantity={self.stock_quantity!r}, description={self.description!r})"
+
+
+class User(Base):
+    __tablename__="user"
+    id:Mapped[int]= mapped_column(primary_key=True)
+    full_name:Mapped[str]=mapped_column(nullable=True)
+    email:Mapped[str]=mapped_column(nullable=True)
+    password:Mapped[str]=mapped_column(nullable=True)
+    phone:Mapped[str]=mapped_column(nullable=True)
+    address:Mapped["Address"]=relationship(back_populates="user", cascade="all, delete-orphan")
+    cart:Mapped["Cart"]=relationship(back_populates="user",cascade="all, delete-orphan")
+    order:Mapped["Order"]=relationship(back_populates="user", cascade="all, delete-orphan")
+    payment_method:Mapped["Payment_Method"]= relationship(back_populates="user", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"User(id={self.id!r}, full_name={self.full_name!r}, email={self.email!r}, password={self.password!r}, phone={self.phone!r})"
+
+class Address(Base):
+    __tablename__="address"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    street_address:Mapped[str]=mapped_column(nullable=True)
+    state:Mapped[str]=mapped_column(nullable=True)
+    postal_code:Mapped[str]=mapped_column(nullable=True)
+    country:Mapped[str]=mapped_column(nullable=True)
+    user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
+    user:Mapped["User"]=relationship(back_populates="address")
+
+    def __repr__(self):
+        return f"Address(id={self.id!r}, street_address={self.street_address!r}, state={self.state!r}, postal_code={self.postal_code!r}, country={self.country!r})"
+
+class Cart(Base):
+    __tablename__="cart"
+    id:Mapped[int] = mapped_column(primary_key=True)
+    user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
+    user:Mapped["User"]=relationship(back_populates="cart")
+    cart_item:Mapped["Cart_Item"]=relationship(back_populates="cart",cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"Cart(id={self.id!r})"
+
+
+class Cart_Item(Base):
+    __tablename__="cart_item"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    quantity:Mapped[int]=mapped_column(nullable=True)
+    product_id:Mapped[int]=mapped_column(ForeignKey("product.id"))
+    product:Mapped["Product"]=relationship(back_populates="cart_item")
+    cart_id:Mapped[int]=mapped_column(ForeignKey("cart.id"))
+    cart:Mapped["Cart"]=relationship(back_populates="cart_item")
+
+    def __repr__(self):
+        return f"Cart_Item(id={self.id!r}, quantity={self.quantity!r})"
+
+class Payment_Method(Base):
+    __tablename__="payment_method"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    card_number:Mapped[int]=mapped_column(nullable=True)
+    cvv:Mapped[int] =mapped_column(nullable=True)
+    expire_date:Mapped[str]=mapped_column(nullable=True)
+    card_holder_name:Mapped[str]=mapped_column(nullable=True)
+    user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
+    user:Mapped["User"]= relationship(back_populates="payment_method")
+    order:Mapped["Order"]=relationship(back_populates="payment_method")
+
+    def __repr__(self):
+        return f"Payment_Method(id={self.id!r}, card_number={self.card_number!r}, cvv={self.cvv!r}, expire_date={self.expire_date!r}, card_holder_name={self.card_holder_name!r})"
+
+
+class Order(Base):
+    __tablename__ = "order"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    created_at:Mapped[str]=mapped_column(nullable=True)
+    user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
+    user:Mapped["User"]=relationship(back_populates="order")
+    payment_method_id:Mapped[int]= mapped_column(ForeignKey("payment_method.id"))
+    payment_method:Mapped["Payment_Method"]=relationship(back_populates="order")
+
+    def __repr__(self):
+        return f"Order(id={self.id!r}, created_at={self.created_at!r})"
+    
+class Order_Item(Base):
+    __tablename__="order_item"
+    id:Mapped[int]=mapped_column(primary_key=True)
+
