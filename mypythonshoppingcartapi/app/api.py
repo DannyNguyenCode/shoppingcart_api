@@ -29,7 +29,7 @@ def list_companies():
         return jsonify([{
             "id": company.id,
             "name": company.name
-        } for company in companies]) 
+        } for company in companies]),200 
 
 @app.route("/companies/<int:id>",methods=["GET"])
 def get_company_by_id(id):
@@ -40,7 +40,7 @@ def get_company_by_id(id):
         return jsonify({
             "id":company.id,
             "name":company.name
-        }),201
+        }),200
 
 
 
@@ -54,7 +54,7 @@ def update_company(id):
         return jsonify({
             "id":company.id,
             "name":company.name
-        }),201
+        }),204
 
 @app.route("/companies/<int:id>/delete",methods=["DELETE"])
 def delete_company(id):
@@ -62,8 +62,63 @@ def delete_company(id):
         company = crud.delete_company(db,id)
         if not company:
             return jsonify({"error": "Company not found"}), 404
-        return jsonify({"message": "Company deleted"}) 
+        return jsonify({"message": "Company deleted"}),200 
 
 
 # ============ category ============
 
+@app.route("/categories/create",methods=["POST"])
+def create_category():
+    data=request.get_json()
+    id = data.get("id")
+    if not id:
+        return jsonify({"error": "id is required"}),400
+    name = data.get("name")
+    with SessionLocal() as db:
+        category = crud.create_category(db,id,name)
+        return jsonify({
+            "id":category.id,
+            "name":category.name
+        }),201
+    
+@app.route("/categories",methods=["GET"])
+def list_categories():
+    with SessionLocal() as db:
+        categories = crud.list_categories(db)
+        return jsonify([{
+                "id": category.id,
+                "name": category.name
+            } for category in categories]),200
+
+@app.route("/categories/<int:id>",methods=["GET"])
+def get_category_by_id(id):
+    with SessionLocal() as db:
+        category = crud.get_category_by_id(db,id)
+        if not category:
+            return jsonify({f"Error: category with id {id} not found"})
+        return jsonify({
+            "id":category.id,
+            "name":category.name
+        }),200
+
+@app.route("/categories/<int:id>/update",methods=["PUT"])
+def update_category(id):
+    data=request.get_json()
+    with SessionLocal() as db:
+        category = crud.update_category(db,id,**data)
+        if not category:
+            return jsonify({f"Error: category with id {id} not found"}),400
+        return jsonify({
+            "id":category.id,
+            "name":category.name
+        }),204
+
+@app.route("/categories/<int:id>/delete", methods=["DELETE"])
+def delete_category(id):
+    with SessionLocal() as db:
+        category = crud.delete_category(db,id)
+        if not category:
+            return jsonify({f"Error: category with id {id} not found"}),400
+        return jsonify({
+            "message": "Category deleted"
+        }),200
