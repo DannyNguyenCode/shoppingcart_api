@@ -95,7 +95,7 @@ def get_category_by_id(id):
     with SessionLocal() as db:
         category = crud.get_category_by_id(db,id)
         if not category:
-            return jsonify({f"Error: category with id {id} not found"})
+            return jsonify({"Error": f"category with id {id} not found"})
         return jsonify({
             "id":category.id,
             "name":category.name
@@ -107,7 +107,7 @@ def update_category(id):
     with SessionLocal() as db:
         category = crud.update_category(db,id,**data)
         if not category:
-            return jsonify({f"Error: category with id {id} not found"}),400
+            return jsonify({"Error": f"category with id {id} not found"}),400
         return jsonify({
             "id":category.id,
             "name":category.name
@@ -118,7 +118,42 @@ def delete_category(id):
     with SessionLocal() as db:
         category = crud.delete_category(db,id)
         if not category:
-            return jsonify({f"Error: category with id {id} not found"}),400
+            return jsonify({"Error": f"category with id {id} not found"}),400
         return jsonify({
             "message": "Category deleted"
         }),200
+    
+
+# ============ product ============
+
+@app.route("/product/create",methods=["POST"])
+def create_product():
+    with SessionLocal() as db :
+        data = request.get_json()
+        # first check relationship category exists
+        category = crud.get_category_by_id(db,data.get("category_id"))
+        if not category:
+            return jsonify({"Error": f"category with id {data.get("category_id")} not found"}),400
+        # second check relationship company exists
+        company = crud.get_company_by_id(db,data.get("company_id"))
+        if not company:
+            return jsonify({"Error": f"company with id {data.get("company_id")} not found"}),400
+        # third if all pass, create product and commit to database
+        product = crud.create_product(
+            db,
+            id=data.get("id"),
+            name=data.get("name"),
+            price=data.get("price"),
+            description=data.get("description"),
+            category_id=data.get("category_id"),
+            stock_quantity=data.get("stock_quantity"),
+            company_id=data.get("company_id"))
+        return jsonify({
+            "id":product.id,
+            "name":product.name,
+            "price":product.price,
+            "description":product.description,
+            "category_id":product.category_id,
+            "stock_quantity":product.stock_quantity,
+            "company_id":product.company_id
+        }),201

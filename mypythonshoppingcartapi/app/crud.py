@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.models import Company,Category
+from app.models import Company,Category,Product
 
 # ============ company ============
 
@@ -63,3 +63,13 @@ def delete_category(db:Session,id:int):
         db.delete(category)
         db.commit()
     return category
+
+# ============ product ============
+
+def create_product(db:Session, id:int, name:str,price:float,description:str,category_id:int,stock_quantity:int,company_id:int) ->Product:
+
+    product = Product(id=id,name=name,price=price,description=description,category_id=category_id,stock_quantity=stock_quantity,company_id=company_id)
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return product
