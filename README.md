@@ -7,6 +7,6 @@
 
 
 ### List of things to look into
-1. when updating row, does not return object, just status code
+1. ~~when updating row, does not return object, just status code~~
 2. ~~add try and exception in api.py~~
 3. Change primary key from int8 to uuid (unknown timeframe)
