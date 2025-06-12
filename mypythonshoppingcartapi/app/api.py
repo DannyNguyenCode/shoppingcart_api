@@ -19,14 +19,18 @@ def create_company():
         name=data.get("name")
         with SessionLocal() as db:
             company = crud.create_company(db, id, name)
-            return jsonify({
-                "id":company.id,
-                "name":company.name
-            }),201
+            keys =['id','name']
+            values = company[0]
+            company_dict = dict(zip(keys,values))
+            company_dict = {"message":f"Company Created", **company_dict}
+            return jsonify(
+                company_dict
+            ),201
     except IntegrityError:
         return jsonify({"Error": f"id={id} already exists in database"}),400
     except Exception as e:
         return jsonify({"Error": f"{e}"})
+
 
 @app.route("/companies", methods=["GET"])
 def list_companies():
@@ -54,8 +58,6 @@ def get_company_by_id(id):
     except Exception as error:
         return jsonify({"Error":f"{error}"})
 
-
-
 @app.route("/companies/<int:id>/update", methods=["PUT"])
 def update_company(id):
     try:
@@ -64,12 +66,16 @@ def update_company(id):
             company = crud.update_company(db,id,**data)
             if not company:
                 return jsonify({"error":"id is required"}),400
-            return jsonify({
-                "id":company.id,
-                "name":company.name
-            }),204
+            keys =['id','name']
+            values = company[0]
+            company_dict = dict(zip(keys,values))
+            company_dict = {"message":f"Company Updated", **company_dict}
+            return jsonify(
+                company_dict
+            ),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
+
 
 @app.route("/companies/<int:id>/delete",methods=["DELETE"])
 def delete_company(id):
@@ -78,31 +84,42 @@ def delete_company(id):
             company = crud.delete_company(db,id)
             if not company:
                 return jsonify({"error": "Company not found"}), 404
-            return jsonify({"message": "Company deleted"}),200
+            keys =['id','name']
+            values = company[0]
+            company_dict = dict(zip(keys,values))
+            company_dict = {"message":f"Company Deleted", **company_dict}
+            return jsonify(
+                company_dict
+            ),200
     except Exception as error:
          return jsonify({"Error":f"{error}"})
 
 
 # ============ category ============
 
+
 @app.route("/categories/create",methods=["POST"])
 def create_category():
     try:
-        data=request.get_json()
-        id = data.get("id")
+        data = request.get_json()
+        id=data.get("id")
         if not id:
             return jsonify({"error": "id is required"}),400
-        name = data.get("name")
+        name=data.get("name")
         with SessionLocal() as db:
-            category = crud.create_category(db,id,name)
-            return jsonify({
-                "id":category.id,
-                "name":category.name
-            }),201
+            category = crud.create_category(db, id, name)
+            keys =['id','name']
+            values = category[0]
+            category_dict = dict(zip(keys,values))
+            category_dict = {"message":f"Category Created", **category_dict}
+            return jsonify(
+                category_dict
+            ),201
     except IntegrityError:
         return jsonify({"Error": f"id={id} already exists in database"}),400
-    except Exception as error:
-        return jsonify({"Error":f"{error}"})
+    except Exception as e:
+        return jsonify({"Error": f"{e}"})
+
     
 @app.route("/categories",methods=["GET"])
 def list_categories():
@@ -137,11 +154,14 @@ def update_category(id):
         with SessionLocal() as db:
             category = crud.update_category(db,id,**data)
             if not category:
-                return jsonify({"Error": f"category with id {id} not found"}),400
-            return jsonify({
-                "id":category.id,
-                "name":category.name
-            }),204
+                return jsonify({"error":"id is required"}),400
+            keys =['id','name']
+            values = category[0]
+            category_dict = dict(zip(keys,values))
+            category_dict = {"message":f"Category Updated", **category_dict}
+            return jsonify(
+                category_dict
+            ),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
 
@@ -151,10 +171,14 @@ def delete_category(id):
         with SessionLocal() as db:
             category = crud.delete_category(db,id)
             if not category:
-                return jsonify({"Error": f"category with id {id} not found"}),400
-            return jsonify({
-                "message": "Category deleted"
-            }),200
+                return jsonify({"error": "Category not found"}), 404
+            keys =['id','name']
+            values = category[0]
+            category_dict = dict(zip(keys,values))
+            category_dict = {"message":f"Category Deleted", **category_dict}
+            return jsonify(
+                category_dict
+            ),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
     
@@ -175,6 +199,7 @@ def create_product():
             if not company:
                 return jsonify({"Error": f"company with id {data.get("company_id")} not found"}),400
             # third if all pass, create product and commit to database
+
             product = crud.create_product(
                 db,
                 id=data.get("id"),
@@ -184,15 +209,13 @@ def create_product():
                 category_id=data.get("category_id"),
                 stock_quantity=data.get("stock_quantity"),
                 company_id=data.get("company_id"))
-            return jsonify({
-                "id":product.id,
-                "name":product.name,
-                "price":product.price,
-                "description":product.description,
-                "category_id":product.category_id,
-                "stock_quantity":product.stock_quantity,
-                "company_id":product.company_id
-            }),201
+            keys =["name","price","description","category_id","stock_quantity","company_id"]
+            values = product[0]
+            product_dict = dict(zip(keys,values))
+            product_dict = {"message":f"Product Created", **product_dict}
+            return jsonify(
+                product_dict
+            ),201
     except IntegrityError:
         return jsonify({"Error": f"id={id} already exists in database"}),400
     except Exception as error:
@@ -221,7 +244,7 @@ def get_product_by_id(id):
         with SessionLocal() as db:
             product = crud.get_product_by_id(db,id)
             if not product:
-                return jsonify({"Error":f"producy id={id} not found"})
+                return jsonify({"Error":f"product id={id} not found"})
             return jsonify({
                 "id":product.id,
                 "name":product.name,
@@ -234,36 +257,40 @@ def get_product_by_id(id):
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
 
+
 @app.route("/products/<int:id>/update",methods=["PUT"])
 def update_product(id):
     try:
-        data = request.get_json()
-        with SessionLocal() as db:
+        with SessionLocal() as db :
+            data = request.get_json()
             product = crud.update_product(db,id,**data)
             if not product:
-                return jsonify({"Error":"Product with id={id} not found"}),400
-            return jsonify({
-                "id":product.id,
-                "name":product.name,
-                "price":product.price,
-                "description":product.description,
-                "category_id":product.category_id,
-                "stock_quantity":product.stock_quantity,
-                "company_id":product.company_id
-            }),204           
+                return jsonify({"error":"id is required"}),400
+            keys =["name","price","description","category_id","stock_quantity","company_id"]
+            values = product[0]
+            product_dict = dict(zip(keys,values))
+            product_dict = {"message":f"Product Updated", **product_dict}
+            return jsonify(
+                product_dict
+            ),201
+                 
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
-    
+
 @app.route("/products/<int:id>/delete",methods=["DELETE"])
 def delete_product(id):
     try:
         with SessionLocal() as db:
             product = crud.delete_product(db,id)
             if not product:
-                return jsonify({"Error": f"product with id {id} not found"}),400
-            return jsonify({
-                "message": "Product deleted"
-            }),200
+                return jsonify({"error":"product not found"}),400
+            keys =["name","price","description","category_id","stock_quantity","company_id"]
+            values = product[0]
+            product_dict = dict(zip(keys,values))
+            product_dict = {"message":f"Product Deleted", **product_dict}
+            return jsonify(
+                product_dict
+            ),201
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
     
