@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
 from app.db import SessionLocal, engine
 from sqlalchemy.exc import IntegrityError
-from app import crud, models
+from app import crud, models,services
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -19,12 +20,13 @@ def create_company():
         name=data.get("name")
         with SessionLocal() as db:
             company = crud.create_company(db, id, name)
+            # converting sqlalchemy's returning to a dictionary
             keys =['id','name']
             values = company[0]
-            company_dict = dict(zip(keys,values))
-            company_dict = {"message":f"Company Created", **company_dict}
+            dictionary = services.generate_response(keys, values,"Company Created",201)
+            # return dictionary in json format to response
             return jsonify(
-                company_dict
+                dictionary
             ),201
     except IntegrityError:
         return jsonify({"Error": f"id={id} already exists in database"}),400
@@ -66,12 +68,13 @@ def update_company(id):
             company = crud.update_company(db,id,**data)
             if not company:
                 return jsonify({"error":"id is required"}),400
+            # converting sqlalchemy's returning to a dictionary
             keys =['id','name']
             values = company[0]
-            company_dict = dict(zip(keys,values))
-            company_dict = {"message":f"Company Updated", **company_dict}
+            dictionary = services.generate_response(keys, values,"Company Updated",200)
+             # return dictionary in json format to response
             return jsonify(
-                company_dict
+                dictionary
             ),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
@@ -84,12 +87,13 @@ def delete_company(id):
             company = crud.delete_company(db,id)
             if not company:
                 return jsonify({"error": "Company not found"}), 404
+            # converting sqlalchemy's returning to a dictionary
             keys =['id','name']
             values = company[0]
-            company_dict = dict(zip(keys,values))
-            company_dict = {"message":f"Company Deleted", **company_dict}
+            dictionary = services.generate_response(keys, values,"Company Deleted",200)
+            # return dictionary in json format to response
             return jsonify(
-                company_dict
+                dictionary
             ),200
     except Exception as error:
          return jsonify({"Error":f"{error}"})
@@ -108,12 +112,13 @@ def create_category():
         name=data.get("name")
         with SessionLocal() as db:
             category = crud.create_category(db, id, name)
+            # converting sqlalchemy's returning to a dictionary  
             keys =['id','name']
             values = category[0]
-            category_dict = dict(zip(keys,values))
-            category_dict = {"message":f"Category Created", **category_dict}
+            dictionary = services.generate_response(keys, values,"Category Created",201)
+            # return dictionary in json format to response
             return jsonify(
-                category_dict
+                dictionary
             ),201
     except IntegrityError:
         return jsonify({"Error": f"id={id} already exists in database"}),400
@@ -155,12 +160,13 @@ def update_category(id):
             category = crud.update_category(db,id,**data)
             if not category:
                 return jsonify({"error":"id is required"}),400
+            # converting sqlalchemy's returning method to a dictionary
             keys =['id','name']
             values = category[0]
-            category_dict = dict(zip(keys,values))
-            category_dict = {"message":f"Category Updated", **category_dict}
+            dictionary = services.generate_response(keys, values,"Category Updated",200)
+            # return dictionary in json format to response
             return jsonify(
-                category_dict
+                dictionary
             ),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
@@ -172,12 +178,13 @@ def delete_category(id):
             category = crud.delete_category(db,id)
             if not category:
                 return jsonify({"error": "Category not found"}), 404
+            # converting sqlalchemy's returning to a dictionary       
             keys =['id','name']
             values = category[0]
-            category_dict = dict(zip(keys,values))
-            category_dict = {"message":f"Category Deleted", **category_dict}
+            dictionary = services.generate_response(keys, values,"Category Deleted",200)
+            # return dictionary in json format to response
             return jsonify(
-                category_dict
+                dictionary
             ),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
@@ -190,31 +197,29 @@ def create_product():
     try:
         with SessionLocal() as db :
             data = request.get_json()
+            id = data.get("id")
+            if not id:
+                return jsonify({"error": "id is required"}),400
             # first check relationship category exists
             category = crud.get_category_by_id(db,data.get("category_id"))
             if not category:
                 return jsonify({"Error": f"category with id {data.get("category_id")} not found"}),400
+            
             # second check relationship company exists
             company = crud.get_company_by_id(db,data.get("company_id"))
             if not company:
                 return jsonify({"Error": f"company with id {data.get("company_id")} not found"}),400
+            
             # third if all pass, create product and commit to database
-
-            product = crud.create_product(
-                db,
-                id=data.get("id"),
-                name=data.get("name"),
-                price=data.get("price"),
-                description=data.get("description"),
-                category_id=data.get("category_id"),
-                stock_quantity=data.get("stock_quantity"),
-                company_id=data.get("company_id"))
+            product = crud.create_product(db,id,data.get("name"),data.get("price"),data.get("description"),data.get("category_id"),data.get("stock_quantity"),data.get("company_id"))
+            
+            # converting sqlalchemy's returning to a dictionary
             keys =["name","price","description","category_id","stock_quantity","company_id"]
             values = product[0]
-            product_dict = dict(zip(keys,values))
-            product_dict = {"message":f"Product Created", **product_dict}
+            dictionary = services.generate_response(keys, values,"Product Created",201)
+            # return dictionary in json format to response
             return jsonify(
-                product_dict
+                dictionary
             ),201
     except IntegrityError:
         return jsonify({"Error": f"id={id} already exists in database"}),400
@@ -266,13 +271,14 @@ def update_product(id):
             product = crud.update_product(db,id,**data)
             if not product:
                 return jsonify({"error":"id is required"}),400
+            # converting sqlalchemy's returning to a dictionary     
             keys =["name","price","description","category_id","stock_quantity","company_id"]
             values = product[0]
-            product_dict = dict(zip(keys,values))
-            product_dict = {"message":f"Product Updated", **product_dict}
+            dictionary = services.generate_response(keys, values,"Product Updated",200)
+            # return dictionary in json format to response
             return jsonify(
-                product_dict
-            ),201
+                dictionary
+            ),200
                  
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
@@ -283,14 +289,96 @@ def delete_product(id):
         with SessionLocal() as db:
             product = crud.delete_product(db,id)
             if not product:
-                return jsonify({"error":"product not found"}),400
+                return jsonify({"error":"product not found"}),400 
             keys =["name","price","description","category_id","stock_quantity","company_id"]
             values = product[0]
-            product_dict = dict(zip(keys,values))
-            product_dict = {"message":f"Product Deleted", **product_dict}
+            dictionary = services.generate_response(keys, values,"Product Deleted",200)
             return jsonify(
-                product_dict
+                dictionary
+            ),200
+    except Exception as error:
+        return jsonify({"Error":f"{error}"}),400
+    
+
+# ============ user ============
+    
+@app.route("/users/create",methods=["POST"])
+def create_user():
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            id = data.get("id")
+            if not id:
+                return jsonify({"error": "id is required"}),400
+            user = crud.create_user(db,id,data.get("full_name"),data.get("email"),data.get("password"),data.get("phone"))
+             
+            keys =['id','full_name',"email","password","phone"]
+            values = user[0]
+            dictionary = services.generate_response(keys, values,"User Created",201)
+
+            return jsonify(
+                dictionary
             ),201
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
     
+@app.route("/users",methods=["GET"])
+def users_list():
+    try:
+        with SessionLocal() as db:
+            users = crud.user_list(db)
+            return jsonify([{
+                "id":user.id,
+                "full_name":user.full_name,
+                "email":user.email,
+                "phone":user.phone,
+                "password":user.password
+            }for user in users]),200
+    except Exception as error:
+        return jsonify({"Error":f"{error}"}),400
+    
+@app.route("/users/<int:id>",methods=["GET"])
+def get_user_by_id(id):
+    try:
+        with SessionLocal() as db:
+            user = crud.get_user_by_id(db,id)
+            return jsonify({
+                "id":user.id,
+                "full_name":user.full_name,
+                "email":user.email,
+                "phone":user.phone,
+                "password":user.password
+            })
+    except Exception as error:
+        return jsonify({"Error":f"{error}"}),400
+
+@app.route("/users/<int:id>/update",methods=["PUT"])
+def update_user(id):
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            user = crud.update_user(db,id,**data)
+            if not user:
+                return jsonify({"Error":f"id is required"})
+            keys=["id","full_name","email","password","phone"]
+            values = user[0]
+            dictionary = services.generate_response(keys,values,"User Updated",200)
+            return jsonify(dictionary),200
+
+    except Exception as error:
+        return jsonify({"Error":f"{error}"}),400
+    
+@app.route("/users/<int:id>/delete",methods=["DELETE"])
+def delete_user(id):
+    try:
+        with SessionLocal() as db:
+            user = crud.delete_user(db,id)
+            if not user:
+                return jsonify({"Error":f"User not found"})
+            keys=["id","full_name","email","password","phone"]
+            values = user[0]
+            dictionary = services.generate_response(keys,values,"User Deleted",200)
+            return jsonify(dictionary),200
+
+    except Exception as error:
+        return jsonify({"Error":f"{error}"}),400
