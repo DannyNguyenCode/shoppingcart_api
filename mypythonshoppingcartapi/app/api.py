@@ -348,7 +348,7 @@ def get_user_by_id(id):
                 "email":user.email,
                 "phone":user.phone,
                 "password":user.password
-            })
+            }),200
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
 
