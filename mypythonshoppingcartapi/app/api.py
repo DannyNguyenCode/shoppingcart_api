@@ -3,7 +3,6 @@ from app.db import SessionLocal, engine
 from sqlalchemy.exc import IntegrityError
 from app import crud, models,services
 
-
 models.Base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
@@ -39,10 +38,7 @@ def list_companies():
     try:
         with SessionLocal() as db:
             companies=crud.list_companies(db)
-            return jsonify([{
-                "id": company.id,
-                "name": company.name
-            } for company in companies]),200
+            return jsonify([company.to_dict() for company in companies]),200
     except Exception as error:
         return jsonify({"Error": f"{error}"}) 
 
@@ -53,10 +49,7 @@ def get_company_by_id(id):
             company = crud.get_company_by_id(db,id)
             if not company:
                 return jsonify({"error": "Company not found"}), 404
-            return jsonify({
-                "id":company.id,
-                "name":company.name
-            }),200
+            return jsonify(company.to_dict()),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
 
@@ -131,10 +124,7 @@ def list_categories():
     try:
         with SessionLocal() as db:
             categories = crud.list_categories(db)
-            return jsonify([{
-                    "id": category.id,
-                    "name": category.name
-                } for category in categories]),200
+            return jsonify([category.to_dict() for category in categories]),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
 
@@ -147,7 +137,17 @@ def get_category_by_id(id):
                 return jsonify({"Error": f"category with id {id} not found"})
             return jsonify({
                 "id":category.id,
-                "name":category.name
+                "name":category.name,
+                "products":[
+                    {
+                        "id":product.id,
+                        "name":product.name,
+                        "price":product.price,
+                        "description":product.description,
+                        "stock_quantity":product.stock_quantity,
+                        "category_id":product.category_id,
+                        "company_id":product.company_id
+                        }for product in category.product]
             }),200
     except Exception as error:
         return jsonify({"Error":f"{error}"})
@@ -214,7 +214,7 @@ def create_product():
             product = crud.create_product(db,id,data.get("name"),data.get("price"),data.get("description"),data.get("category_id"),data.get("stock_quantity"),data.get("company_id"))
             
             # converting sqlalchemy's returning to a dictionary
-            keys =["name","price","description","category_id","stock_quantity","company_id"]
+            keys =["name","price","description","category_id","stock_quantity","company_id","company","category"]
             values = product[0]
             dictionary = services.generate_response(keys, values,"Product Created",201)
             # return dictionary in json format to response
@@ -231,15 +231,7 @@ def product_list():
     try:
         with SessionLocal() as db:
             products = crud.product_list(db)
-            return jsonify([{
-                "id":product.id,
-                "name":product.name,
-                "price":product.price,
-                "description":product.description,
-                "category_id":product.category_id,
-                "stock_quantity":product.stock_quantity,
-                "company_id":product.company_id
-            } for product in products]),200
+            return jsonify([product.to_dict() for product in products]),200
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
     
@@ -250,15 +242,7 @@ def get_product_by_id(id):
             product = crud.get_product_by_id(db,id)
             if not product:
                 return jsonify({"Error":f"product id={id} not found"})
-            return jsonify({
-                "id":product.id,
-                "name":product.name,
-                "price":product.price,
-                "description":product.description,
-                "category_id":product.category_id,
-                "stock_quantity":product.stock_quantity,
-                "company_id":product.company_id
-            }),200
+            return jsonify(product.to_dict()),200
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
 
@@ -327,13 +311,7 @@ def users_list():
     try:
         with SessionLocal() as db:
             users = crud.user_list(db)
-            return jsonify([{
-                "id":user.id,
-                "full_name":user.full_name,
-                "email":user.email,
-                "phone":user.phone,
-                "password":user.password
-            }for user in users]),200
+            return jsonify([user.to_dict() for user in users]),200
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
     
@@ -342,13 +320,9 @@ def get_user_by_id(id):
     try:
         with SessionLocal() as db:
             user = crud.get_user_by_id(db,id)
-            return jsonify({
-                "id":user.id,
-                "full_name":user.full_name,
-                "email":user.email,
-                "phone":user.phone,
-                "password":user.password
-            }),200
+            if not user:
+                return jsonify({"Error":f"user id={id} not found"})
+            return jsonify(user.to_dict()),200
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
 

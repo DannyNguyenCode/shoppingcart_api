@@ -45,10 +45,13 @@ def create_category(db:Session, id:int,name:str)->Category:
 
 
 def list_categories(db:Session):
-    return db.execute(select(Category)).scalars()
+    categories = db.execute(select(Category)).scalars()
+
+    return categories
 
 def get_category_by_id(db:Session,id:int):
-    return db.execute(select(Category).where(Category.id==id)).scalar()
+    category = db.execute(select(Category).where(Category.id==id)).scalar()
+    return category
 
 def update_category(db:Session,id:int,**kwargs):
     category = db.execute(update(Category)
@@ -76,10 +79,12 @@ def create_product(db:Session, id:int, name:str,price:float,description:str,cate
     return product
 
 def product_list(db:Session):
-    return db.execute(select(Product)).scalars()
+    products = db.execute(select(Product)).scalars()
+    return products
 
 def get_product_by_id(db:Session,id:int):
-    return db.execute(select(Product).where(Product.id == id)).scalar()
+    products = db.execute(select(Product).where(Product.id == id)).scalar()
+    return products
 
 def update_product(db:Session,id:int,**kwargs):
     product = db.execute(update(Product)

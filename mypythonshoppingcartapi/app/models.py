@@ -10,6 +10,9 @@ class Company(Base):
     name:Mapped[str]=mapped_column(nullable=True)
     product:Mapped[List["Product"]] = relationship(back_populates="company",cascade="all, delete-orphan")
 
+    def to_dict(self):
+        return {"id":self.id,"name":self.name, "products":[{"id":product.id,"name":product.name,"price":product.price,"description":product.description,"stock_quantity":product.stock_quantity,"category_id":product.category_id,"company_id":product.company_id}for product in self.product]}
+
     def __repr__(self) -> str:
         return (
             f"Company(id={self.id!r}, name={self.name!r})"
@@ -20,7 +23,8 @@ class Category(Base):
     id:Mapped[int]= mapped_column(primary_key=True)
     name:Mapped[str]=mapped_column(nullable=True)
     product:Mapped[List["Product"]] = relationship(back_populates="category",cascade="all, delete-orphan")
-
+    def to_dict(self):
+        return {"id":self.id,"name":self.name, "products":[{"id":product.id,"name":product.name,"price":product.price,"description":product.description,"stock_quantity":product.stock_quantity,"category_id":product.category_id,"company_id":product.company_id}for product in self.product]}
     def __repr__(self):
         return f"Category(id={self.id!r}, name={self.name!r})"
     
@@ -36,7 +40,19 @@ class Product(Base):
     company:Mapped["Company"]=relationship(back_populates="product")
     category:Mapped["Category"]=relationship(back_populates="product")
     cart_item:Mapped["Cart_Item"]=relationship(back_populates="product")
-
+    def to_dict(self):
+        return {
+                "id":self.id,
+                "name":self.name,
+                "price":self.price,
+                "stock_quantity":self.stock_quantity,
+                "description":self.description,
+                "company_id":self.company_id,
+                "category_id":self.category_id,
+                "company":self.company.to_dict(),
+                "category":self.category.to_dict(),
+                # "cart_item":self.cart_item,
+                }
     def __repr__(self):
         return f"Product(id={self.id!r}, name={self.name!r}, price={self.price!r}, stock_quantity={self.stock_quantity!r}, description={self.description!r})"
 
@@ -52,6 +68,15 @@ class User(Base):
     cart:Mapped["Cart"]=relationship(back_populates="user",cascade="all, delete-orphan")
     order:Mapped["Order"]=relationship(back_populates="user", cascade="all, delete-orphan")
     payment_method:Mapped["Payment_Method"]= relationship(back_populates="user", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id":self.id,
+            "full_name":self.full_name,
+            "email":self.email,
+            "password":self.password,
+            "phone":self.phone,
+        }
 
     def __repr__(self):
         return f"User(id={self.id!r}, full_name={self.full_name!r}, email={self.email!r}, password={self.password!r}, phone={self.phone!r})"
