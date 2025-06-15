@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select,update,insert,delete
-from app.models import Company,Category,Product,User,Address
+from app.models import Company,Category,Product,User,Address,Cart
 
 # ============ company ============
 
@@ -161,4 +161,31 @@ def delete_address(db:Session,id:int):
                          .returning(Address.id,Address.street_address,Address.state,Address.postal_code,Address.country,Address.user_id)).fetchall()
     db.commit()
     return address
-                      
+                    
+# ============ cart ============
+def create_cart(db:Session,id:int,user_id:int)->Cart:
+    cart = db.execute(insert(Cart)
+                      .values(id=id,user_id=user_id)
+                      .returning(Cart.id,Cart.user_id)).fetchall()
+    db.commit()
+    return cart
+
+def cart_list(db:Session):
+    cart = db.execute(select(Cart)).scalars()
+    return cart
+def get_cart_by_id(db:Session,id:int):
+    cart = db.execute(select(Cart).where(Cart.id==id)).scalar()
+    return cart
+def update_cart(db:Session,id:int,**kwargs):
+    cart = db.execute(update(Cart)
+                      .where(Cart.id == id)
+                      .values(kwargs)
+                      .returning(Cart.id,Cart.user_id)).fetchall()
+    db.commit()
+    return cart
+def delete_cart(db:Session,id:int):
+    cart = db.execute(delete(Cart)
+                      .where(Cart.id == id)
+                      .returning(Cart.id,Cart.user_id)).fetchall()
+    db.commit()
+    return cart

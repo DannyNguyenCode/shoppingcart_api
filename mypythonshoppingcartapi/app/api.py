@@ -227,7 +227,7 @@ def create_product():
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
         if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"User with id={data.get("id")} already exists"}), 409
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
         elif "not-null constraint" in error_msg:
             return jsonify({"error": "id is a required field"}), 400
         else:
@@ -311,7 +311,7 @@ def create_user():
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
         if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"User with id={data.get("id")} already exists"}), 409
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
         elif "not-null constraint" in error_msg:
             return jsonify({"error": f"id is a required field {error_msg}"}), 400
         else:
@@ -385,7 +385,7 @@ def create_address():
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
         if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"User with id={data.get("id")} already exists"}), 409
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
         elif "not-null constraint" in error_msg:
             return jsonify({"error": f"id is a required field {error_msg}"}), 400
         else:
@@ -442,3 +442,74 @@ def delete_address(id):
     except Exception as error:
         return jsonify({"error":f"{error}"}),400
 
+@app.route("/cart/create",methods=["POST"])
+def create_cart():
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            cart = crud.create_cart(db,data.get("id"),data.get("user_id"))
+            keys=["id","user_id"]
+            values = cart[0]
+            dictionary = services.generate_response(keys,values,"Cart Created",200)
+            return jsonify(dictionary),200
+
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": f"id is a required field {error_msg}"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/cart",methods=["GET"])
+def cart_list():
+    try:
+        with SessionLocal() as db:
+            carts = crud.cart_list(db)
+            return jsonify([cart.to_dict() for cart in carts]),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/cart/<int:id>",methods=["GET"])
+def get_cart_by_id(id):
+    try:
+        with SessionLocal() as db:
+            cart = crud.get_cart_by_id(db,id)
+            if not cart:
+                return jsonify({"error":f"cart id={id} not found"})
+            return jsonify(cart.to_dict()),200    
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/cart/<int:id>/update",methods=["PUT"])
+def update_cart(id):
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            cart = crud.update_cart(db,id,**data)
+            if not cart:
+                return jsonify({"error":f"cart id={id} not found"})
+            keys=["id","user_id"]
+            values = cart[0]
+            dictionary = services.generate_response(keys,values,"Cart Updated",200)
+            return jsonify(dictionary),200            
+
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/cart/<int:id>/delete",methods=["DELETE"])
+def delete_cart(id):
+    try:
+        with SessionLocal() as db:
+            cart = crud.delete_cart(db,id)
+            if not cart:
+                return jsonify({"error":f"cart id={id} not found"})
+            keys=["id","user_id"]
+            values = cart[0]
+            dictionary = services.generate_response(keys,values,"Cart Deleted",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400            

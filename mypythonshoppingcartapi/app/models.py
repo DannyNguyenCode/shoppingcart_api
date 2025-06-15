@@ -83,7 +83,12 @@ class User(Base):
                 "postal_code":address.postal_code,
                 "country":address.country,
                 "user_id":address.user_id,
-            }for address in self.address]}
+            }for address in self.address],
+            "cart":{
+                "id":self.cart.id,
+                "user_id":self.cart.user_id
+            }
+            }
 
     def __repr__(self):
         return f"User(id={self.id!r}, full_name={self.full_name!r}, email={self.email!r}, password={self.password!r}, phone={self.phone!r})"
@@ -118,7 +123,11 @@ class Cart(Base):
     user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
     user:Mapped["User"]=relationship(back_populates="cart")
     cart_item:Mapped["Cart_Item"]=relationship(back_populates="cart",cascade="all, delete-orphan")
-
+    def to_dict(self):
+        return{
+            "id":self.id,
+            "user_id":self.user_id
+        }
     def __repr__(self):
         return f"Cart(id={self.id!r})"
 
