@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select,update,insert,delete
-from app.models import Company,Category,Product,User
+from app.models import Company,Category,Product,User,Address
 
 # ============ company ============
 
@@ -131,3 +131,34 @@ def delete_user(db:Session,id:int):
                       .returning(User.id,User.full_name,User.email,User.password,User.phone)).fetchall()
     db.commit()
     return user
+
+# ============ address ============
+
+def create_address(db:Session,id:int,street_address:str,state:str,postal_code:str,country:str,user_id:int)->Address:
+    user = db.execute(insert(Address)
+                      .values(id=id,street_address=street_address,state=state,postal_code=postal_code,country=country,user_id=user_id)
+                      .returning(Address.id,Address.street_address,Address.state,Address.postal_code,Address.country,Address.user_id)).fetchall()
+    db.commit()
+    return user
+
+def address_list(db:Session):
+    return db.execute(select(Address)).scalars()
+
+def get_address_by_id(db:Session,id:int):
+    return db.execute(select(Address).where(Address.id == id)).scalar()
+
+def update_address(db:Session,id:int,**kwargs):
+    address = db.execute(update(Address)
+                         .where(Address.id == id)
+                         .values(kwargs)
+                         .returning(Address.id,Address.street_address,Address.state,Address.postal_code,Address.country,Address.user_id)).fetchall()
+    db.commit()
+    return address
+
+def delete_address(db:Session,id:int):
+    address = db.execute(delete(Address)
+                         .where(Address.id == id)
+                         .returning(Address.id,Address.street_address,Address.state,Address.postal_code,Address.country,Address.user_id)).fetchall()
+    db.commit()
+    return address
+                      

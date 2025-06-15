@@ -12,13 +12,9 @@ app = Flask(__name__)
 @app.route("/companies/create",methods=["POST"])
 def create_company():
     try:
-        data = request.get_json()
-        id=data.get("id")
-        if not id:
-            return jsonify({"error": "id is required"}),400
-        name=data.get("name")
         with SessionLocal() as db:
-            company = crud.create_company(db, id, name)
+            data = request.get_json()
+            company = crud.create_company(db, data.get("id"), data.get("name"))
             # converting sqlalchemy's returning to a dictionary
             keys =['id','name']
             values = company[0]
@@ -27,10 +23,16 @@ def create_company():
             return jsonify(
                 dictionary
             ),201
-    except IntegrityError:
-        return jsonify({"Error": f"id={id} already exists in database"}),400
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": "id is a required field"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
     except Exception as e:
-        return jsonify({"Error": f"{e}"})
+        return jsonify({"error": f"{e}"}),400
 
 
 @app.route("/companies", methods=["GET"])
@@ -51,13 +53,13 @@ def get_company_by_id(id):
                 return jsonify({"error": "Company not found"}), 404
             return jsonify(company.to_dict()),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"})
+        return jsonify({"error":f"{error}"})
 
 @app.route("/companies/<int:id>/update", methods=["PUT"])
 def update_company(id):
     try:
-        data=request.get_json()
         with SessionLocal() as db:
+            data=request.get_json()
             company = crud.update_company(db,id,**data)
             if not company:
                 return jsonify({"error":"id is required"}),400
@@ -70,7 +72,7 @@ def update_company(id):
                 dictionary
             ),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"})
+        return jsonify({"error":f"{error}"})
 
 
 @app.route("/companies/<int:id>/delete",methods=["DELETE"])
@@ -89,7 +91,7 @@ def delete_company(id):
                 dictionary
             ),200
     except Exception as error:
-         return jsonify({"Error":f"{error}"})
+         return jsonify({"error":f"{error}"})
 
 
 # ============ category ============
@@ -98,13 +100,9 @@ def delete_company(id):
 @app.route("/categories/create",methods=["POST"])
 def create_category():
     try:
-        data = request.get_json()
-        id=data.get("id")
-        if not id:
-            return jsonify({"error": "id is required"}),400
-        name=data.get("name")
         with SessionLocal() as db:
-            category = crud.create_category(db, id, name)
+            data = request.get_json()
+            category = crud.create_category(db, data.get("id"), data.get("name"))
             # converting sqlalchemy's returning to a dictionary  
             keys =['id','name']
             values = category[0]
@@ -113,10 +111,17 @@ def create_category():
             return jsonify(
                 dictionary
             ),201
-    except IntegrityError:
-        return jsonify({"Error": f"id={id} already exists in database"}),400
+
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": "id is a required field"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
     except Exception as e:
-        return jsonify({"Error": f"{e}"})
+        return jsonify({"error": f"{e}"}),400
 
     
 @app.route("/categories",methods=["GET"])
@@ -126,7 +131,7 @@ def list_categories():
             categories = crud.list_categories(db)
             return jsonify([category.to_dict() for category in categories]),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"})
+        return jsonify({"error":f"{error}"})
 
 @app.route("/categories/<int:id>",methods=["GET"])
 def get_category_by_id(id):
@@ -134,7 +139,7 @@ def get_category_by_id(id):
         with SessionLocal() as db:
             category = crud.get_category_by_id(db,id)
             if not category:
-                return jsonify({"Error": f"category with id {id} not found"})
+                return jsonify({"error": f"category with id {id} not found"})
             return jsonify({
                 "id":category.id,
                 "name":category.name,
@@ -150,7 +155,7 @@ def get_category_by_id(id):
                         }for product in category.product]
             }),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"})
+        return jsonify({"error":f"{error}"})
 
 @app.route("/categories/<int:id>/update",methods=["PUT"])
 def update_category(id):
@@ -169,7 +174,7 @@ def update_category(id):
                 dictionary
             ),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"})
+        return jsonify({"error":f"{error}"})
 
 @app.route("/categories/<int:id>/delete", methods=["DELETE"])
 def delete_category(id):
@@ -187,7 +192,7 @@ def delete_category(id):
                 dictionary
             ),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"})
+        return jsonify({"error":f"{error}"})
     
 
 # ============ product ============
@@ -197,21 +202,19 @@ def create_product():
     try:
         with SessionLocal() as db :
             data = request.get_json()
-            id = data.get("id")
-            if not id:
-                return jsonify({"error": "id is required"}),400
+
             # first check relationship category exists
             category = crud.get_category_by_id(db,data.get("category_id"))
             if not category:
-                return jsonify({"Error": f"category with id {data.get("category_id")} not found"}),400
+                return jsonify({"error": f"category with id {data.get("category_id")} not found"}),400
             
             # second check relationship company exists
             company = crud.get_company_by_id(db,data.get("company_id"))
             if not company:
-                return jsonify({"Error": f"company with id {data.get("company_id")} not found"}),400
+                return jsonify({"error": f"company with id {data.get("company_id")} not found"}),400
             
             # third if all pass, create product and commit to database
-            product = crud.create_product(db,id,data.get("name"),data.get("price"),data.get("description"),data.get("category_id"),data.get("stock_quantity"),data.get("company_id"))
+            product = crud.create_product(db,data.get("id"),data.get("name"),data.get("price"),data.get("description"),data.get("category_id"),data.get("stock_quantity"),data.get("company_id"))
             
             # converting sqlalchemy's returning to a dictionary
             keys =["name","price","description","category_id","stock_quantity","company_id","company","category"]
@@ -221,10 +224,16 @@ def create_product():
             return jsonify(
                 dictionary
             ),201
-    except IntegrityError:
-        return jsonify({"Error": f"id={id} already exists in database"}),400
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"User with id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": "id is a required field"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
     except Exception as error:
-        return jsonify({"Error":f"{error}"})
+        return jsonify({"error":f"{error}"})
 
 @app.route("/products",methods=["GET"])
 def product_list():
@@ -241,7 +250,7 @@ def get_product_by_id(id):
         with SessionLocal() as db:
             product = crud.get_product_by_id(db,id)
             if not product:
-                return jsonify({"Error":f"product id={id} not found"})
+                return jsonify({"error":f"product id={id} not found"})
             return jsonify(product.to_dict()),200
     except Exception as error:
         return jsonify({"Error":f"{error}"}),400
@@ -265,7 +274,7 @@ def update_product(id):
             ),200
                  
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error":f"{error}"}),400
 
 @app.route("/products/<int:id>/delete",methods=["DELETE"])
 def delete_product(id):
@@ -281,7 +290,7 @@ def delete_product(id):
                 dictionary
             ),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error":f"{error}"}),400
     
 
 # ============ user ============
@@ -291,11 +300,7 @@ def create_user():
     try:
         with SessionLocal() as db:
             data = request.get_json()
-            id = data.get("id")
-            if not id:
-                return jsonify({"error": "id is required"}),400
-            user = crud.create_user(db,id,data.get("full_name"),data.get("email"),data.get("password"),data.get("phone"))
-             
+            user = crud.create_user(db,data.get("id"),data.get("full_name"),data.get("email"),data.get("password"),data.get("phone"))    
             keys =['id','full_name',"email","password","phone"]
             values = user[0]
             dictionary = services.generate_response(keys, values,"User Created",201)
@@ -303,8 +308,16 @@ def create_user():
             return jsonify(
                 dictionary
             ),201
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"User with id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": f"id is a required field {error_msg}"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error":f"{error}"}),400
     
 @app.route("/users",methods=["GET"])
 def users_list():
@@ -313,7 +326,7 @@ def users_list():
             users = crud.user_list(db)
             return jsonify([user.to_dict() for user in users]),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error":f"{error}"}),400
     
 @app.route("/users/<int:id>",methods=["GET"])
 def get_user_by_id(id):
@@ -321,10 +334,10 @@ def get_user_by_id(id):
         with SessionLocal() as db:
             user = crud.get_user_by_id(db,id)
             if not user:
-                return jsonify({"Error":f"user id={id} not found"})
+                return jsonify({"error":f"user id={id} not found"})
             return jsonify(user.to_dict()),200
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error":f"{error}"}),400
 
 @app.route("/users/<int:id>/update",methods=["PUT"])
 def update_user(id):
@@ -333,14 +346,14 @@ def update_user(id):
             data = request.get_json()
             user = crud.update_user(db,id,**data)
             if not user:
-                return jsonify({"Error":f"id is required"})
+                return jsonify({"error":f"id is required"})
             keys=["id","full_name","email","password","phone"]
             values = user[0]
             dictionary = services.generate_response(keys,values,"User Updated",200)
             return jsonify(dictionary),200
 
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error":f"{error}"}),400
     
 @app.route("/users/<int:id>/delete",methods=["DELETE"])
 def delete_user(id):
@@ -348,11 +361,84 @@ def delete_user(id):
         with SessionLocal() as db:
             user = crud.delete_user(db,id)
             if not user:
-                return jsonify({"Error":f"User not found"})
+                return jsonify({"error":f"User not found"})
             keys=["id","full_name","email","password","phone"]
             values = user[0]
             dictionary = services.generate_response(keys,values,"User Deleted",200)
             return jsonify(dictionary),200
 
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error":f"{error}"}),400
+    
+# ============ address ============
+
+@app.route("/addresses/create",methods=["POST"])
+def create_address():
+    try: 
+        with SessionLocal() as db:
+            data = request.get_json()
+            address = crud.create_address(db,data.get("id"),data.get("street_address"),data.get("state"),data.get("postal_code"),data.get("country"),data.get("user_id"))
+            keys = ["id","street_address","state","postal_code","country","user_id"]
+            values = address[0]
+            dictionary = services.generate_response(keys,values,"Address Created",200)
+            return jsonify(dictionary),200
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"User with id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": f"id is a required field {error_msg}"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/addresses",methods=["GET"])
+def address_list():
+    try:
+        with SessionLocal() as db:
+            addresses = crud.address_list(db)
+            return jsonify([address.to_dict() for address in addresses]),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/addresses/<int:id>",methods=["GET"])
+def get_address_by_id(id):
+    try:
+        with SessionLocal() as db:
+            address = crud.get_address_by_id(db,id)
+            if not address:
+                return jsonify({"error":f"address id={id} not found"})
+            return jsonify(address.to_dict()),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/addresses/<int:id>/update",methods=["PUT"])
+def update_address(id):
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            address = crud.update_address(db,id,**data)
+            if not address:
+                return jsonify({"error":f"id is required"}),400
+            keys = ["id","street_address","state","postal_code","country","user_id"]
+            values = address[0]
+            dictionary = services.generate_response(keys,values,"Address Updated",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/addresses/<int:id>/delete",methods=["DELETE"])
+def delete_address(id):
+    try:
+        with SessionLocal() as db:
+            address = crud.delete_address(db,id)
+            if not address:
+                jsonify({"error":"id is required"}),400
+            keys = ["id","street_address","state","postal_code","country","user_id"]
+            values = address[0]
+            dictionary=services.generate_response(keys,values,"Address Deleted",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+

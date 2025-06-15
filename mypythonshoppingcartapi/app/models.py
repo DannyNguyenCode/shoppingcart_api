@@ -64,7 +64,7 @@ class User(Base):
     email:Mapped[str]=mapped_column(nullable=True)
     password:Mapped[str]=mapped_column(nullable=True)
     phone:Mapped[str]=mapped_column(nullable=True)
-    address:Mapped["Address"]=relationship(back_populates="user", cascade="all, delete-orphan")
+    address:Mapped[List["Address"]]=relationship(back_populates="user", cascade="all, delete-orphan")
     cart:Mapped["Cart"]=relationship(back_populates="user",cascade="all, delete-orphan")
     order:Mapped["Order"]=relationship(back_populates="user", cascade="all, delete-orphan")
     payment_method:Mapped["Payment_Method"]= relationship(back_populates="user", cascade="all, delete-orphan")
@@ -76,7 +76,14 @@ class User(Base):
             "email":self.email,
             "password":self.password,
             "phone":self.phone,
-        }
+            "address":[{
+                "id":address.id,
+                "street_address":address.street_address,
+                "state":address.state,
+                "postal_code":address.postal_code,
+                "country":address.country,
+                "user_id":address.user_id,
+            }for address in self.address]}
 
     def __repr__(self):
         return f"User(id={self.id!r}, full_name={self.full_name!r}, email={self.email!r}, password={self.password!r}, phone={self.phone!r})"
@@ -90,6 +97,17 @@ class Address(Base):
     country:Mapped[str]=mapped_column(nullable=True)
     user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
     user:Mapped["User"]=relationship(back_populates="address")
+
+    def to_dict(self):
+        return {
+            "id":self.id,
+            "street_address":self.street_address,
+            "state":self.state,
+            "postal_code":self.postal_code,
+            "country":self.country,
+            "user_id":self.user_id,
+            "user":self.user.to_dict(),
+        }
 
     def __repr__(self):
         return f"Address(id={self.id!r}, street_address={self.street_address!r}, state={self.state!r}, postal_code={self.postal_code!r}, country={self.country!r})"
