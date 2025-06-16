@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from typing import Optional, List
+from typing import List
 from sqlalchemy import ForeignKey
 class Base(DeclarativeBase):
     pass
@@ -49,9 +49,6 @@ class Product(Base):
                 "description":self.description,
                 "company_id":self.company_id,
                 "category_id":self.category_id,
-                "company":self.company.to_dict(),
-                "category":self.category.to_dict(),
-                # "cart_item":self.cart_item,
                 }
     def __repr__(self):
         return f"Product(id={self.id!r}, name={self.name!r}, price={self.price!r}, stock_quantity={self.stock_quantity!r}, description={self.description!r})"
@@ -122,11 +119,12 @@ class Cart(Base):
     id:Mapped[int] = mapped_column(primary_key=True)
     user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
     user:Mapped["User"]=relationship(back_populates="cart")
-    cart_item:Mapped["Cart_Item"]=relationship(back_populates="cart",cascade="all, delete-orphan")
+    cart_item:Mapped[List["Cart_Item"]]=relationship(back_populates="cart",cascade="all, delete-orphan")
     def to_dict(self):
         return{
             "id":self.id,
-            "user_id":self.user_id
+            "user_id":self.user_id,
+            "cart_item":[item.to_dict() for item in self.cart_item]
         }
     def __repr__(self):
         return f"Cart(id={self.id!r})"
@@ -140,7 +138,13 @@ class Cart_Item(Base):
     product:Mapped["Product"]=relationship(back_populates="cart_item")
     cart_id:Mapped[int]=mapped_column(ForeignKey("cart.id"))
     cart:Mapped["Cart"]=relationship(back_populates="cart_item")
-
+    def to_dict(self):
+        return{
+            "id":self.id,
+            "quantity":self.quantity,
+            "cart_id":self.cart_id,
+            "products":self.product.to_dict()
+        }
     def __repr__(self):
         return f"Cart_Item(id={self.id!r}, quantity={self.quantity!r})"
 

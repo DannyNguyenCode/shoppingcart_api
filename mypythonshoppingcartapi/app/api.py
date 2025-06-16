@@ -442,6 +442,8 @@ def delete_address(id):
     except Exception as error:
         return jsonify({"error":f"{error}"}),400
 
+# ============ cart ============
+
 @app.route("/cart/create",methods=["POST"])
 def create_cart():
     try:
@@ -513,3 +515,76 @@ def delete_cart(id):
             return jsonify(dictionary),200
     except Exception as error:
         return jsonify({"error":f"{error}"}),400            
+
+# ============ cart_item ============
+
+@app.route("/cart_items/create",methods=["POST"])
+def create_cart_item():
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            cart_item = crud.create_cart_item(db,data.get("id"),data.get("quantity"),data.get("product_id"),data.get("cart_id"))
+            keys=["id","quantity","product_id","cart_id"]
+            values =cart_item[0]
+            dictionary = services.generate_response(keys,values,"Cart Item Created",200)
+            return jsonify(dictionary),200
+
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": f"id is a required field {error_msg}"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/cart_items",methods=["GET"])
+def cart_items_list():
+    try:
+        with SessionLocal() as db:
+            cart_items = crud.cart_item_list(db)
+            return jsonify([cart_item.to_dict() for cart_item in cart_items]),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/cart_items/<int:id>",methods=["GET"])
+def get_cart_item_by_id(id):
+    try:
+        with SessionLocal() as db:
+            cart_item = crud.get_cart_item_by_id(db,id)
+            if not cart_item:
+                return jsonify({"error":f"cart item id={id} not found"}),400
+            return jsonify(cart_item.to_dict()),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/cart_items/<int:id>/update",methods=["PUT"])
+def update_cart_item(id):
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            cart_item = crud.update_cart_item(db,id,**data)
+            if not cart_item:
+                return jsonify({"error":f"cart item id={id} not found"}),400
+            keys=["id","quantity","product_id","cart_id"]
+            values =cart_item[0]
+            dictionary = services.generate_response(keys,values,"Cart Item Updated",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/cart_items/<int:id>/delete",methods=["DELETE"])
+def delete_cart_item(id):
+    try:
+        with SessionLocal() as db:
+            cart_item = crud.delete_cart_item(db,id)
+            if not cart_item:
+                return jsonify({"error":f"cart item id={id} not found"})
+            keys=["id","quantity","product_id","cart_id"]
+            values =cart_item[0]
+            dictionary = services.generate_response(keys,values,"Cart item Deleted",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"})

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select,update,insert,delete
-from app.models import Company,Category,Product,User,Address,Cart
+from app.models import Company,Category,Product,User,Address,Cart,Cart_Item
 
 # ============ company ============
 
@@ -189,3 +189,33 @@ def delete_cart(db:Session,id:int):
                       .returning(Cart.id,Cart.user_id)).fetchall()
     db.commit()
     return cart
+
+# ============ cart_item ============
+
+def create_cart_item(db:Session,id:int,quantity:int,product_id:int,cart_id:int)->Cart_Item:
+    cart_item = db.execute(insert(Cart_Item)
+                           .values(id=id,quantity=quantity,product_id=product_id,cart_id=cart_id)
+                           .returning(Cart_Item.id,Cart_Item.quantity,Cart_Item.product_id,Cart_Item.cart_id)).fetchall()
+    db.commit()
+    return cart_item
+
+def cart_item_list(db:Session):
+    cart_item = db.execute(select(Cart_Item)).scalars()
+    return cart_item
+
+def get_cart_item_by_id(db:Session,id:int):
+    cart_item = db.execute(select(Cart_Item).where(Cart_Item.id==id)).scalar()
+    return cart_item
+def update_cart_item(db:Session,id:int,**kwargs):
+    cart_item = db.execute(update(Cart_Item)
+                           .where(Cart_Item.id == id)
+                           .values(kwargs)
+                           .returning(Cart_Item.id,Cart_Item.quantity,Cart_Item.product_id,Cart_Item.cart_id)).fetchall()
+    db.commit()
+    return cart_item
+def delete_cart_item(db:Session,id:int):
+    cart_item = db.execute(delete(Cart_Item)
+                           .where(Cart_Item.id==id)
+                           .returning(Cart_Item.id,Cart_Item.quantity,Cart_Item.product_id,Cart_Item.cart_id)).fetchall()
+    db.commit()
+    return cart_item
