@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select,update,insert,delete
-from app.models import Company,Category,Product,User,Address,Cart,Cart_Item
+from app.models import Company,Category,Product,User,Address,Cart,Cart_Item,Payment_Method
 
 # ============ company ============
 
@@ -219,3 +219,34 @@ def delete_cart_item(db:Session,id:int):
                            .returning(Cart_Item.id,Cart_Item.quantity,Cart_Item.product_id,Cart_Item.cart_id)).fetchall()
     db.commit()
     return cart_item
+
+# ============ payment_method ============
+
+def create_payment_method(db:Session,id:int,card_number:int,cvv:int,expire_date:str,card_holder_name:str,user_id:int)->Payment_Method:
+    payment_method = db.execute(insert(Payment_Method)
+                                .values(id=id,card_number=card_number,cvv=cvv,expire_date=expire_date,card_holder_name=card_holder_name,user_id=user_id)
+                                .returning(Payment_Method.id,Payment_Method.card_number,Payment_Method.cvv,Payment_Method.expire_date,Payment_Method.card_holder_name,Payment_Method.user_id)).fetchall()
+    db.commit()
+    return payment_method
+
+def payment_method_list(db:Session):
+    payment_method = db.execute(select(Payment_Method)).scalars()
+    return payment_method
+def get_payment_method_by_id(db:Session,id:int):
+    payment_method = db.execute(select(Payment_Method).where(Payment_Method.id==id)).scalar()
+    return payment_method
+
+def update_payment_method(db:Session,id:int,**kwargs):
+    payment_method = db.execute(update(Payment_Method)
+                                .where(Payment_Method.id==id)
+                                .values(kwargs)
+                                .returning(Payment_Method.id,Payment_Method.card_number,Payment_Method.cvv,Payment_Method.expire_date,Payment_Method.card_holder_name,Payment_Method.user_id)).fetchall()
+    db.commit()
+    return payment_method
+
+def delete_payment_method(db:Session,id:int):
+    payment_method = db.execute(delete(Payment_Method)
+                                .where(Payment_Method.id == id)
+                                .returning(Payment_Method.id,Payment_Method.card_number,Payment_Method.cvv,Payment_Method.expire_date,Payment_Method.card_holder_name,Payment_Method.user_id)).fetchall()
+    db.commit()
+    return payment_method

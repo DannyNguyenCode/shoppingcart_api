@@ -217,7 +217,7 @@ def create_product():
             product = crud.create_product(db,data.get("id"),data.get("name"),data.get("price"),data.get("description"),data.get("category_id"),data.get("stock_quantity"),data.get("company_id"))
             
             # converting sqlalchemy's returning to a dictionary
-            keys =["name","price","description","category_id","stock_quantity","company_id","company","category"]
+            keys =["id","name","price","description","category_id","stock_quantity","company_id","company","category"]
             values = product[0]
             dictionary = services.generate_response(keys, values,"Product Created",201)
             # return dictionary in json format to response
@@ -265,7 +265,7 @@ def update_product(id):
             if not product:
                 return jsonify({"error":"id is required"}),400
             # converting sqlalchemy's returning to a dictionary     
-            keys =["name","price","description","category_id","stock_quantity","company_id"]
+            keys =["id","name","price","description","category_id","stock_quantity","company_id"]
             values = product[0]
             dictionary = services.generate_response(keys, values,"Product Updated",200)
             # return dictionary in json format to response
@@ -283,7 +283,7 @@ def delete_product(id):
             product = crud.delete_product(db,id)
             if not product:
                 return jsonify({"error":"product not found"}),400 
-            keys =["name","price","description","category_id","stock_quantity","company_id"]
+            keys =["id","name","price","description","category_id","stock_quantity","company_id"]
             values = product[0]
             dictionary = services.generate_response(keys, values,"Product Deleted",200)
             return jsonify(
@@ -588,3 +588,76 @@ def delete_cart_item(id):
             return jsonify(dictionary),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
+
+
+# ============ payment_method ============
+
+@app.route("/payment_methods/create",methods=["POST"])
+def create_payment_method():
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            payment_method = crud.create_payment_method(db,data.get("id"),data.get("card_number"),data.get("cvv"),data.get("expire_date"),data.get("card_holder_name"),data.get("user_id"))
+            keys = ["id","card_number","cvv","expire_date","card_holder_name","user_id"]
+            values = payment_method[0]
+            dictionary = services.generate_response(keys,values,"Payment Method Created",200)
+            return jsonify(dictionary),200
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": f"id is a required field {error_msg}"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/payment_methods",methods=["GET"])
+def payment_method_list():
+    try:
+        with SessionLocal() as db:
+            payment_methods = crud.payment_method_list(db)
+            return jsonify([payment_method.to_dict() for payment_method in payment_methods]),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/payment_methods/<int:id>",methods=["GET"])
+def get_payment_method_by_id(id):
+    try:
+        with SessionLocal() as db:
+            payment_method=crud.get_payment_method_by_id(db,id)
+            if not payment_method:
+                return jsonify({"error":f"payment method id={id} not found"}),400
+            return jsonify(payment_method.to_dict()),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/payment_methods/<int:id>/update",methods=["PUT"])
+def update_payment_method(id):
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            payment_method = crud.update_payment_method(db,id,**data)
+            if not payment_method:
+                return jsonify({"error":f"payment method id={id} not found"}),400
+            keys = ["id","card_number","cvv","expire_date","card_holder_name","user_id"]
+            values = payment_method[0]
+            dictionary=services.generate_response(keys,values,"Payment Method Updated",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/payment_methods/<int:id>/delete",methods=["DELETE"])
+def delete_payment_method(id):
+    try:
+        with SessionLocal() as db:
+            payment_method = crud.delete_payment_method(db,id)
+            if not payment_method:
+                return jsonify({"error":f"payment method id={id} not found"}),400
+            keys = ["id","card_number","cvv","expire_date","card_holder_name","user_id"]
+            values = payment_method[0]
+            dictionary=services.generate_response(keys,values,"Payment Method Deleted",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400

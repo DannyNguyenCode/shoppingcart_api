@@ -9,7 +9,8 @@ class Company(Base):
     id:Mapped[int]= mapped_column(primary_key=True)
     name:Mapped[str]=mapped_column(nullable=True)
     product:Mapped[List["Product"]] = relationship(back_populates="company",cascade="all, delete-orphan")
-
+    def get_keys(self):
+        return["id","name"]
     def to_dict(self):
         return {"id":self.id,"name":self.name, "products":[{"id":product.id,"name":product.name,"price":product.price,"description":product.description,"stock_quantity":product.stock_quantity,"category_id":product.category_id,"company_id":product.company_id}for product in self.product]}
 
@@ -23,6 +24,8 @@ class Category(Base):
     id:Mapped[int]= mapped_column(primary_key=True)
     name:Mapped[str]=mapped_column(nullable=True)
     product:Mapped[List["Product"]] = relationship(back_populates="category",cascade="all, delete-orphan")
+    def get_keys(self):
+        return["id","name"]
     def to_dict(self):
         return {"id":self.id,"name":self.name, "products":[{"id":product.id,"name":product.name,"price":product.price,"description":product.description,"stock_quantity":product.stock_quantity,"category_id":product.category_id,"company_id":product.company_id}for product in self.product]}
     def __repr__(self):
@@ -40,6 +43,8 @@ class Product(Base):
     company:Mapped["Company"]=relationship(back_populates="product")
     category:Mapped["Category"]=relationship(back_populates="product")
     cart_item:Mapped["Cart_Item"]=relationship(back_populates="product")
+    def get_keys(self):
+        return["name","price","description","category_id","stock_quantity","company_id","company","category"]
     def to_dict(self):
         return {
                 "id":self.id,
@@ -64,8 +69,9 @@ class User(Base):
     address:Mapped[List["Address"]]=relationship(back_populates="user", cascade="all, delete-orphan")
     cart:Mapped["Cart"]=relationship(back_populates="user",cascade="all, delete-orphan")
     order:Mapped["Order"]=relationship(back_populates="user", cascade="all, delete-orphan")
-    payment_method:Mapped["Payment_Method"]= relationship(back_populates="user", cascade="all, delete-orphan")
-
+    payment_method:Mapped[List["Payment_Method"]]= relationship(back_populates="user", cascade="all, delete-orphan")
+    def get_keys(self):
+        return["id","full_name","email","password","phone"]
     def to_dict(self):
         return {
             "id":self.id,
@@ -84,7 +90,15 @@ class User(Base):
             "cart":{
                 "id":self.cart.id,
                 "user_id":self.cart.user_id
-            }
+            },
+            "payment_methods":[{
+                "id":pay_method.id,
+                "card_number":pay_method.card_number,
+                "card_holder_name":pay_method.card_holder_name,
+                "cvv":pay_method.cvv,
+                "expire_date":pay_method.expire_date,
+                "user_id":pay_method.user_id
+            }for pay_method in self.payment_method]
             }
 
     def __repr__(self):
@@ -99,7 +113,8 @@ class Address(Base):
     country:Mapped[str]=mapped_column(nullable=True)
     user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
     user:Mapped["User"]=relationship(back_populates="address")
-
+    def get_keys(self):
+        return["id","street_address","state","postal_code","country","user_id"]
     def to_dict(self):
         return {
             "id":self.id,
@@ -120,6 +135,8 @@ class Cart(Base):
     user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
     user:Mapped["User"]=relationship(back_populates="cart")
     cart_item:Mapped[List["Cart_Item"]]=relationship(back_populates="cart",cascade="all, delete-orphan")
+    def get_keys(self):
+        return["id","user_id"]
     def to_dict(self):
         return{
             "id":self.id,
@@ -138,6 +155,8 @@ class Cart_Item(Base):
     product:Mapped["Product"]=relationship(back_populates="cart_item")
     cart_id:Mapped[int]=mapped_column(ForeignKey("cart.id"))
     cart:Mapped["Cart"]=relationship(back_populates="cart_item")
+    def get_keys(self):
+        return["id","quantity","product_id","cart_id"]
     def to_dict(self):
         return{
             "id":self.id,
@@ -158,7 +177,17 @@ class Payment_Method(Base):
     user_id:Mapped[int]=mapped_column(ForeignKey("user.id"))
     user:Mapped["User"]= relationship(back_populates="payment_method")
     order:Mapped["Order"]=relationship(back_populates="payment_method")
-
+    def get_keys(self):
+        return["id","card_number","cvv","expire_date","card_holder_name","user_id"]
+    def to_dict(self):
+        return{
+            "id":self.id,
+            "card_number":self.card_number,
+            "card_holder_name":self.card_holder_name,
+            "cvv":self.cvv,
+            "expire_date":self.expire_date,
+            "user_id":self.user_id
+        }
     def __repr__(self):
         return f"Payment_Method(id={self.id!r}, card_number={self.card_number!r}, cvv={self.cvv!r}, expire_date={self.expire_date!r}, card_holder_name={self.card_holder_name!r})"
 
