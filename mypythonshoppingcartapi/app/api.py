@@ -20,9 +20,7 @@ def create_company():
             values = company[0]
             dictionary = services.generate_response(keys, values,"Company Created",201)
             # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),201
+            return jsonify(dictionary),201
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
         if "unique constraint" in error_msg or "duplicate key value" in error_msg:
@@ -68,9 +66,7 @@ def update_company(id):
             values = company[0]
             dictionary = services.generate_response(keys, values,"Company Updated",200)
              # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),200
+            return jsonify(dictionary),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
@@ -87,9 +83,7 @@ def delete_company(id):
             values = company[0]
             dictionary = services.generate_response(keys, values,"Company Deleted",200)
             # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),200
+            return jsonify(dictionary),200
     except Exception as error:
          return jsonify({"error":f"{error}"})
 
@@ -108,9 +102,7 @@ def create_category():
             values = category[0]
             dictionary = services.generate_response(keys, values,"Category Created",201)
             # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),201
+            return jsonify(dictionary),201
 
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
@@ -170,9 +162,7 @@ def update_category(id):
             values = category[0]
             dictionary = services.generate_response(keys, values,"Category Updated",200)
             # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),200
+            return jsonify(dictionary),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
@@ -188,9 +178,7 @@ def delete_category(id):
             values = category[0]
             dictionary = services.generate_response(keys, values,"Category Deleted",200)
             # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),200
+            return jsonify(dictionary),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
     
@@ -221,9 +209,7 @@ def create_product():
             values = product[0]
             dictionary = services.generate_response(keys, values,"Product Created",201)
             # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),201
+            return jsonify(dictionary),201
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
         if "unique constraint" in error_msg or "duplicate key value" in error_msg:
@@ -269,9 +255,7 @@ def update_product(id):
             values = product[0]
             dictionary = services.generate_response(keys, values,"Product Updated",200)
             # return dictionary in json format to response
-            return jsonify(
-                dictionary
-            ),200
+            return jsonify(dictionary),200
                  
     except Exception as error:
         return jsonify({"error":f"{error}"}),400
@@ -286,9 +270,7 @@ def delete_product(id):
             keys =["id","name","price","description","category_id","stock_quantity","company_id"]
             values = product[0]
             dictionary = services.generate_response(keys, values,"Product Deleted",200)
-            return jsonify(
-                dictionary
-            ),200
+            return jsonify(dictionary),200
     except Exception as error:
         return jsonify({"error":f"{error}"}),400
     
@@ -304,10 +286,8 @@ def create_user():
             keys =["id","full_name","email","password","phone"]
             values = user[0]
             dictionary = services.generate_response(keys, values,"User Created",201)
-
-            return jsonify(
-                dictionary
-            ),201
+            return jsonify(dictionary),201
+        
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
         if "unique constraint" in error_msg or "duplicate key value" in error_msg:
@@ -717,15 +697,6 @@ def update_order(id):
             values = order[0]
             dictionary = services.generate_response(keys,values,"Order Updated",200)
             return jsonify(dictionary),200
-
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
     except Exception as error:
         return jsonify({"error":f"{error}"}),400
 
@@ -744,6 +715,7 @@ def delete_order(id):
         return jsonify({"error":f"{error}"}),400       
 
 # ============ order_item ============
+
 @app.route("/order_items/create",methods=["POST"])
 def create_order_item():
     try:
@@ -797,14 +769,6 @@ def update_order_item(id):
             values = order_item[0]
             dictionary = services.generate_response(keys,values,"Order Item Updated",200)
             return jsonify(dictionary),200
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
     except Exception as error:
         return jsonify({"error":f"{error}"}),400
 
@@ -820,4 +784,79 @@ def delete_order_item(id):
             dictionary = services.generate_response(keys,values,"Order Item Deleted",200)
             return jsonify(dictionary),200
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400  
+        return jsonify({"error":f"{error}"}),400
+    
+# ============ shipping ============
+
+@app.route("/shipping/create",methods=["POST"])
+def create_shipping():
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            shipping = crud.create_shipping(db,data.get("id"),data.get("tracking_number"),data.get("shipping_method"),data.get("status"),data.get("order_id"))
+            keys=["id","tracking_number","shipping_method","status","order_id"]
+            values = shipping[0]
+            dictionary = services.generate_response(keys,values,"Shipping Created",200)
+            return jsonify(dictionary),200
+        
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": f"id is a required field {error_msg}"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/shipping",methods=["GET"])
+def shipping_list():
+    try:
+        with SessionLocal() as db:
+            shipping_list = crud.shipping_list(db)
+            return jsonify([shipping.to_dict() for shipping in shipping_list]),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/shipping/<int:id>",methods=["GET"])
+def get_shipping_by_id(id):
+    try:
+        with SessionLocal() as db:
+            shipping = crud.get_shipping_by_id(db,id)
+            if not shipping:
+                return jsonify({"error":"Shipping id={id} not found"}),400
+            return jsonify(shipping.to_dict()),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/shipping/<int:id>/update",methods=["PUT"])
+def update_shipping(id):
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            shipping = crud.update_shipping(db,id,**data)
+            if not shipping:
+                return jsonify({"error":"Shipping id={id} not found"}),400
+            keys=["id","tracking_number","shipping_method","status","order_id"]
+            values = shipping[0]
+            dictionary = services.generate_response(keys,values,"Shipping Updated",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/shipping/<int:id>/delete",methods=["DELETE"])
+def delete_shipping(id):
+    try:
+        with SessionLocal() as db:
+            shipping = crud.delete_shipping(db,id)
+            if not shipping:
+                return jsonify({"error":"Shipping id={id} not found"}),400
+            keys=["id","tracking_number","shipping_method","status","order_id"]
+            values = shipping[0]
+            dictionary = services.generate_response(keys, values, "Shipping Deleted",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+# ============ invoice ============

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select,update,insert,delete
-from app.models import Company,Category,Product,User,Address,Cart,Cart_Item,Payment_Method,Order,Order_Item
+from app.models import Company,Category,Product,User,Address,Cart,Cart_Item,Payment_Method,Order,Order_Item,Shipping,Invoice
 
 # ============ company ============
 
@@ -311,3 +311,38 @@ def delete_order_item(db:Session,id:int):
                             .returning(Order_Item.id,Order_Item.quantity,Order_Item.price_at_purchase,Order_Item.order_id,Order_Item.product_id)).fetchall()
     db.commit()
     return order_item
+
+# ============ shipping ============
+
+def create_shipping(db:Session,id:int,tracking_number:str,shipping_method:str,status:str,order_id:int)->Shipping:
+    shipping = db.execute(insert(Shipping)
+                          .values(id=id,tracking_number=tracking_number,shipping_method=shipping_method,status=status,order_id=order_id)
+                          .returning(Shipping.id,Shipping.tracking_number,Shipping.shipping_method,Shipping.status,Shipping.order_id)).fetchall()
+    db.commit()
+    return shipping
+
+def shipping_list(db:Session):
+    shipping = db.execute(select(Shipping)).scalars()
+    return shipping
+
+def get_shipping_by_id(db:Session,id:int):
+    shipping = db.execute(select(Shipping).where(Shipping.id == id)).scalar()
+    return shipping
+
+def update_shipping(db:Session,id:int,**kwargs):
+    shipping = db.execute(update(Shipping)
+                          .where(Shipping.id == id)
+                          .values(kwargs)
+                          .returning(Shipping.id,Shipping.tracking_number,Shipping.shipping_method,Shipping.status,Shipping.order_id)).fetchall()
+    db.commit()
+    return shipping
+
+def delete_shipping(db:Session,id:int):
+    shipping= db.execute(delete(Shipping)
+                         .where(Shipping.id==id)
+                         .returning(Shipping.id,Shipping.tracking_number,Shipping.shipping_method,Shipping.status,Shipping.order_id)).fetchall()
+    db.commit()
+    return shipping
+
+# ============ invoice ============
+

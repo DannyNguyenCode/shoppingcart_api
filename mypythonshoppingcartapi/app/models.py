@@ -189,14 +189,23 @@ class Order(Base):
     payment_method_id:Mapped[int]= mapped_column(ForeignKey("payment_method.id"))
     payment_method:Mapped["Payment_Method"]=relationship(back_populates="order")
     order_item:Mapped[List["Order_Item"]]=relationship(back_populates="order",cascade="all, delete-orphan")
+    shipping:Mapped["Shipping"]=relationship(back_populates="order")
+    invoice:Mapped["Invoice"]=relationship(back_populates="order")
+
     def to_dict(self):
         return{
         "id":self.id,
         "created_at":self.created_at,
         "user_id":self.user_id,
+        "user":{
+            "full_name":self.user.full_name,
+            "email":self.user.email,
+            "phone":self.user.phone,
+        },
         "payment_method_id":self.payment_method_id,
         "payment_method":self.payment_method.to_dict(),
-        "order_item":[item.to_dict() for item in self.order_item]
+        "order_item":[item.to_dict() for item in self.order_item],
+        "shipping":self.shipping.to_dict()
         }
     def __repr__(self):
         return f"Order(id={self.id!r}, created_at={self.created_at!r}, user_id={self.user_id!r}, payment_method_id={self.payment_method_id!r})"
@@ -221,4 +230,46 @@ class Order_Item(Base):
         }
     def __repr__(self):
         return f"Order_Item(id={self.id!r}, quantity={self.quantity!r}, price_at_purchase={self.price_at_purchase!r}, order_id={self.order_id!r}, product_id={self.product_id!r})"
+    
+class Shipping(Base):
+    __tablename__="shipping"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    tracking_number:Mapped[str]=mapped_column(nullable=True)
+    shipping_method:Mapped[str]=mapped_column(nullable=True)
+    status:Mapped[str]=mapped_column(nullable=True)
+    order_id:Mapped[int]=mapped_column(ForeignKey("order.id"))
+    order:Mapped["Order"]=relationship(back_populates="shipping")
+    def to_dict(self):
+        return{
+            "id":self.id,
+            "tracking_number":self.tracking_number,
+            "shipping_method":self.shipping_method,
+            "status":self.status,
+            "order_id":self.order_id
+        }
+    def __repr__(self):
+        return f"Shipping(id={self.id!r}, tracking_number={self.tracking_number!r}, shipping_method={self.shipping_method!r}, status={self.status!r}, order_id={self.order_id!r})"
+    
+class Invoice(Base):
+    __tablename__="invoice"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    total_price:Mapped[float]=mapped_column(nullable=True)
+    payment_status:Mapped[str]=mapped_column(nullable=True)
+    created_at:Mapped[str]=mapped_column(nullable=True)
+    paid_at:Mapped[str]=mapped_column(nullable=True)
+    order_id:Mapped[int]=mapped_column(ForeignKey("order.id"))
+    order:Mapped["Order"]=relationship(back_populates='invoice')
+    
+    def to_dict(self):
+        return{
+            "id":self.id,
+            "total_price":self.total_price,
+            "payment_status":self.payment_status,
+            "created_at":self.created_at,
+            "paid_at":self.paid_at,
+            "order_id":self.order_id,
+            "order":self.order.to_dict()
+        }
+    def __repr__(self):
+        return f"Invoice(id={self.id!r}, total_price={self.total_price!r}, payment_status={self.payment_status!r}, created_at={self.created_at!r}, paid_at={self.paid_at!r}, order_id={self.order_id!r})"
 
