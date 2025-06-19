@@ -860,3 +860,73 @@ def delete_shipping(id):
         return jsonify({"error":f"{error}"}),400
     
 # ============ invoice ============
+
+@app.route("/invoices/create",methods=["POST"])
+def create_invoice():
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            invoice = crud.create_invoice(db,data.get("id"),data.get("total_price"),data.get("payment_status"),data.get("created_at"),data.get("paid_at"),data.get("order_id"))
+            keys=["id","total_price","payment_status","created_at","paid_at","order_id"]
+            values = invoice[0]
+            dictionary = services.generate_response(keys,values,"Invoice Created",200)
+            return jsonify(dictionary),200
+    except IntegrityError as integrityError:
+        error_msg = str(integrityError.orig).lower()
+        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
+            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
+        elif "not-null constraint" in error_msg:
+            return jsonify({"error": f"id is a required field {error_msg}"}), 400
+        else:
+            return jsonify({"error": f"{error_msg}"}),400
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/invoices",methods=["GET"])
+def invoices_list():
+    try:
+        with SessionLocal() as db:
+            invoices = crud.invoice_list(db)
+            return jsonify([invoice.to_dict() for invoice in invoices]),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400  
+
+@app.route("/invoices/<int:id>",methods=["GET"])
+def get_invoice_by_id(id):
+    try:
+        with SessionLocal() as db:
+            invoice = crud.get_invoice_by_id(db,id)
+            if not invoice:
+                return jsonify({"error":"Invoice id={id} not found"}),400
+            return jsonify(invoice.to_dict()),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+    
+@app.route("/invoices/<int:id>/update",methods=["PUT"])
+def update_invoice(id):
+    try:
+        with SessionLocal() as db:
+            data = request.get_json()
+            invoice = crud.update_invoice(db,id,**data)
+            if not invoice:
+                return jsonify({"error":"Invoice id={id} not found"}),400
+            keys=["id","total_price","payment_status","created_at","paid_at","order_id"]
+            values = invoice[0]
+            dictionary = services.generate_response(keys,values,"Invoice Updated",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400
+
+@app.route("/invoices/<int:id>/delete",methods=["DELETE"])
+def delete_invoice(id):
+    try:
+        with SessionLocal() as db:
+            invoice = crud.delete_invoice(db,id)
+            if not invoice:
+               return jsonify({"error":"Invoice id={id} not found"}),400 
+            keys=["id","total_price","payment_status","created_at","paid_at","order_id"]
+            values = invoice[0]
+            dictionary = services.generate_response(keys,values,"Invoice Deleted",200)
+            return jsonify(dictionary),200
+    except Exception as error:
+        return jsonify({"error":f"{error}"}),400

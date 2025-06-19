@@ -346,3 +346,29 @@ def delete_shipping(db:Session,id:int):
 
 # ============ invoice ============
 
+def create_invoice(db:Session,id:int,total_price:float,payment_status:str,created_at:str,paid_at:str,order_id:int)->Invoice:
+    invoice = db.execute(insert(Invoice)
+                         .values(id=id,total_price=total_price,payment_status=payment_status,created_at=created_at,paid_at=paid_at,order_id=order_id)
+                         .returning(Invoice.id,Invoice.total_price,Invoice.payment_status,Invoice.created_at,Invoice.paid_at,Invoice.order_id)).fetchall()
+    db.commit()
+    return invoice
+def invoice_list(db:Session):
+    invoice = db.execute(select(Invoice)).scalars()
+    return invoice
+def get_invoice_by_id(db:Session,id:int):
+    invoice = db.execute(select(Invoice).where(Invoice.id==id)).scalar()
+    return invoice
+def update_invoice(db:Session,id:int,**kwargs):
+    invoice = db.execute(update(Invoice)
+                         .where(Invoice.id == id)
+                         .values(kwargs)
+                         .returning(Invoice.id,Invoice.total_price,Invoice.payment_status,Invoice.created_at,Invoice.paid_at,Invoice.order_id)).fetchall()
+    db.commit()
+    return invoice
+def delete_invoice(db:Session,id:int):
+    invoice = db.execute(delete(Invoice)
+                         .where(Invoice.id == id)
+                         .returning(Invoice.id,Invoice.total_price,Invoice.payment_status,Invoice.created_at,Invoice.paid_at,Invoice.order_id)).fetchall()
+    db.commit()
+    return invoice
+    
