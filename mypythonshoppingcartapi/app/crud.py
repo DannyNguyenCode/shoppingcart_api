@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select,update,insert,delete
-from app.models import Company,Category,Product,User,Address,Cart,Cart_Item,Payment_Method
+from app.models import Company,Category,Product,User,Address,Cart,Cart_Item,Payment_Method,Order,Order_Item
 
 # ============ company ============
 
@@ -250,3 +250,64 @@ def delete_payment_method(db:Session,id:int):
                                 .returning(Payment_Method.id,Payment_Method.card_number,Payment_Method.cvv,Payment_Method.expire_date,Payment_Method.card_holder_name,Payment_Method.user_id)).fetchall()
     db.commit()
     return payment_method
+
+
+# ============ order ============
+
+def create_order(db:Session,id:int,created_at:str,user_id:int,payment_method_id:int)->Order:
+    order = db.execute(insert(Order)
+                       .values(id=id,created_at=created_at,user_id=user_id,payment_method_id=payment_method_id)
+                       .returning(Order.id,Order.created_at,Order.user_id,Order.payment_method_id)).fetchall()
+    db.commit()
+    return order
+
+def order_list(db:Session):
+    order = db.execute(select(Order)).scalars()
+    return order
+
+def get_order_by_id(db:Session,id:int):
+    order = db.execute(select(Order).where(Order.id==id)).scalar()
+    return order
+def update_order(db:Session,id:int,**kwargs):
+    order = db.execute(update(Order)
+                       .where(Order.id==id)
+                       .values(kwargs)
+                       .returning(Order.id,Order.created_at,Order.user_id,Order.payment_method_id)).fetchall()
+    db.commit()
+    return order
+def delete_order(db:Session,id:int):
+    order =db.execute(delete(Order)
+                      .where(Order.id == id)
+                      .returning(Order.id,Order.created_at,Order.user_id,Order.payment_method_id)).fetchall()
+    db.commit()
+    return order
+
+# ============ order_item ============
+
+def create_order_item(db:Session, id:int,quantity:int,price_at_purchase:float,order_id:int,product_id:int)->Order_Item:
+    order_item = db.execute(insert(Order_Item)
+                            .values(id=id,quantity=quantity,price_at_purchase=price_at_purchase,order_id=order_id,product_id=product_id)
+                            .returning(Order_Item.id,Order_Item.quantity,Order_Item.price_at_purchase,Order_Item.order_id,Order_Item.product_id)).fetchall()
+    db.commit()
+    return order_item
+
+def order_item_list(db:Session):
+    order_item = db.execute(select(Order_Item)).scalars()
+    return order_item
+
+def get_order_item_by_id(db:Session,id:int):
+    order_item = db.execute(select(Order_Item).where(Order_Item.id==id)).scalar()
+    return order_item
+def update_order_item(db:Session,id:int,**kwargs):
+    order_item = db.execute(update(Order_Item)
+                            .where(Order_Item.id == id)
+                            .values(kwargs)
+                            .returning(Order_Item.id,Order_Item.quantity,Order_Item.price_at_purchase,Order_Item.order_id,Order_Item.product_id)).fetchall()
+    db.commit()
+    return order_item
+def delete_order_item(db:Session,id:int):
+    order_item = db.execute(delete(Order_Item)
+                            .where(Order_Item.id == id)
+                            .returning(Order_Item.id,Order_Item.quantity,Order_Item.price_at_purchase,Order_Item.order_id,Order_Item.product_id)).fetchall()
+    db.commit()
+    return order_item
