@@ -1,26 +1,21 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, request, jsonify
 from app.db import SessionLocal, engine
 from sqlalchemy.exc import IntegrityError
 from app import crud, models,services
+from app.logic import company_logic
 
 models.Base.metadata.create_all(bind=engine)
-
-app = Flask(__name__)
+app = Blueprint("api", __name__)
 
 # ============ company ============
+
 
 @app.route("/companies/create",methods=["POST"])
 def create_company():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            company = crud.create_company(db, data.get("id"), data.get("name"))
-            # converting sqlalchemy's returning to a dictionary
-            keys =["id","name"]
-            values = company[0]
-            dictionary = services.generate_response(keys, values,"Company Created",201)
-            # return dictionary in json format to response
-            return jsonify(dictionary),201
+        data = request.get_json()
+        company = company_logic.create_company_logic(data.get("id"),data.get("name"))
+        return jsonify(company),201
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
         if "unique constraint" in error_msg or "duplicate key value" in error_msg:
@@ -29,44 +24,31 @@ def create_company():
             return jsonify({"error": "id is a required field"}), 400
         else:
             return jsonify({"error": f"{error_msg}"}),400
-    except Exception as e:
-        return jsonify({"error": f"{e}"}),400
+
 
 
 @app.route("/companies", methods=["GET"])
 def list_companies():
     try:
-        with SessionLocal() as db:
-            companies=crud.list_companies(db)
-            return jsonify([company.to_dict() for company in companies]),200
+        companies=company_logic.list_companies_logic()
+        return jsonify(companies),200
     except Exception as error:
         return jsonify({"Error": f"{error}"}) 
 
 @app.route("/companies/<int:id>",methods=["GET"])
 def get_company_by_id(id):
     try:
-        with SessionLocal() as db:
-            company = crud.get_company_by_id(db,id)
-            if not company:
-                return jsonify({"error": "Company not found"}), 404
-            return jsonify(company.to_dict()),200
+            company = company_logic.get_company_by_id_logic(id)
+            return jsonify(company),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
 @app.route("/companies/<int:id>/update", methods=["PUT"])
 def update_company(id):
     try:
-        with SessionLocal() as db:
-            data=request.get_json()
-            company = crud.update_company(db,id,**data)
-            if not company:
-                return jsonify({"error":"id is required"}),400
-            # converting sqlalchemy's returning to a dictionary
-            keys =["id","name"]
-            values = company[0]
-            dictionary = services.generate_response(keys, values,"Company Updated",200)
-             # return dictionary in json format to response
-            return jsonify(dictionary),200
+        data=request.get_json()
+        company = company_logic.update_company_logic(id, data)
+        return jsonify(company),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
@@ -74,16 +56,10 @@ def update_company(id):
 @app.route("/companies/<int:id>/delete",methods=["DELETE"])
 def delete_company(id):
     try:
-        with SessionLocal() as db:
-            company = crud.delete_company(db,id)
-            if not company:
-                return jsonify({"error": "Company not found"}), 404
+
+            company = company_logic.delete_company_logic(id)
             # converting sqlalchemy's returning to a dictionary
-            keys =["id","name"]
-            values = company[0]
-            dictionary = services.generate_response(keys, values,"Company Deleted",200)
-            # return dictionary in json format to response
-            return jsonify(dictionary),200
+            return jsonify(company),200
     except Exception as error:
          return jsonify({"error":f"{error}"})
 
