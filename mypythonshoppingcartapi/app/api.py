@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.db import SessionLocal, engine
 from sqlalchemy.exc import IntegrityError
 from app import crud, models,services
-from app.logic import company_logic
+from app.logic import company_logic,category_logic,product_logic
 
 models.Base.metadata.create_all(bind=engine)
 app = Blueprint("api", __name__)
@@ -70,15 +70,9 @@ def delete_company(id):
 @app.route("/categories/create",methods=["POST"])
 def create_category():
     try:
-        with SessionLocal() as db:
             data = request.get_json()
-            category = crud.create_category(db, data.get("id"), data.get("name"))
-            # converting sqlalchemy's returning to a dictionary  
-            keys =["id","name"]
-            values = category[0]
-            dictionary = services.generate_response(keys, values,"Category Created",201)
-            # return dictionary in json format to response
-            return jsonify(dictionary),201
+            category = category_logic.create_category_logic(data.get("id"), data.get("name"))
+            return jsonify(category),201
 
     except IntegrityError as integrityError:
         error_msg = str(integrityError.orig).lower()
@@ -88,16 +82,13 @@ def create_category():
             return jsonify({"error": "id is a required field"}), 400
         else:
             return jsonify({"error": f"{error_msg}"}),400
-    except Exception as e:
-        return jsonify({"error": f"{e}"}),400
 
     
 @app.route("/categories",methods=["GET"])
 def list_categories():
     try:
-        with SessionLocal() as db:
-            categories = crud.list_categories(db)
-            return jsonify([category.to_dict() for category in categories]),200
+        categories = category_logic.category_list_logic()
+        return jsonify(categories),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
@@ -105,23 +96,10 @@ def list_categories():
 def get_category_by_id(id):
     try:
         with SessionLocal() as db:
-            category = crud.get_category_by_id(db,id)
+            category = category_logic.get_category_by_id_logic(id)
             if not category:
                 return jsonify({"error": f"category with id {id} not found"})
-            return jsonify({
-                "id":category.id,
-                "name":category.name,
-                "products":[
-                    {
-                        "id":product.id,
-                        "name":product.name,
-                        "price":product.price,
-                        "description":product.description,
-                        "stock_quantity":product.stock_quantity,
-                        "category_id":product.category_id,
-                        "company_id":product.company_id
-                        }for product in category.product]
-            }),200
+            return jsonify(category),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
@@ -129,32 +107,16 @@ def get_category_by_id(id):
 def update_category(id):
     try:
         data=request.get_json()
-        with SessionLocal() as db:
-            category = crud.update_category(db,id,**data)
-            if not category:
-                return jsonify({"error":"id is required"}),400
-            # converting sqlalchemy's returning method to a dictionary
-            keys =["id","name"]
-            values = category[0]
-            dictionary = services.generate_response(keys, values,"Category Updated",200)
-            # return dictionary in json format to response
-            return jsonify(dictionary),200
+        category = category_logic.update_category_logic(id,data)
+        return jsonify(category),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
 @app.route("/categories/<int:id>/delete", methods=["DELETE"])
 def delete_category(id):
     try:
-        with SessionLocal() as db:
-            category = crud.delete_category(db,id)
-            if not category:
-                return jsonify({"error": "Category not found"}), 404
-            # converting sqlalchemy's returning to a dictionary       
-            keys =["id","name"]
-            values = category[0]
-            dictionary = services.generate_response(keys, values,"Category Deleted",200)
-            # return dictionary in json format to response
-            return jsonify(dictionary),200
+        category = category_logic.delete_category_logic(id)
+        return jsonify(category),200
     except Exception as error:
         return jsonify({"error":f"{error}"})
     

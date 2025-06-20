@@ -1,6 +1,5 @@
 from app.api import app
 from flask import Flask
-from app.api import app
 from app.swaggerapi import swaggerapp
 
 application = Flask(__name__)
