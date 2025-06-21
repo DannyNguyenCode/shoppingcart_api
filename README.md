@@ -13,3 +13,4 @@
 4. ~~return company and category when querying product from database~~ (also now when querying company or category, also query products)
 5. ~~Introduce swagger~~
 6. ~~Refactor code to run both Flask route and swagger UI~~
+7. Look into deploying on vercel (issue with serverless function has crashed)
