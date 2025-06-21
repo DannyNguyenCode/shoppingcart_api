@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.db import SessionLocal, engine
 from sqlalchemy.exc import IntegrityError
 from app import crud, models,services
-from app.logic import company_logic,category_logic,product_logic
+from app.logic import company_logic,category_logic,product_logic,user_logic,address_logic,cart_logic,cart_item_logic,payment_method_logic,order_logic,order_item_logic,shipping_logic,invoice_logic
 
 models.Base.metadata.create_all(bind=engine)
 app = Blueprint("api", __name__)
@@ -14,54 +14,47 @@ app = Blueprint("api", __name__)
 def create_company():
     try:
         data = request.get_json()
-        company = company_logic.create_company_logic(data.get("id"),data.get("name"))
-        return jsonify(company),201
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": "id is a required field"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        response, status = company_logic.create_company_logic(**data)
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
 
 
 
 @app.route("/companies", methods=["GET"])
 def list_companies():
     try:
-        companies=company_logic.list_companies_logic()
-        return jsonify(companies),200
+        response, status = company_logic.list_companies_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"Error": f"{error}"}) 
+        return jsonify({"error": f"{error}"}), 400 
 
 @app.route("/companies/<int:id>",methods=["GET"])
 def get_company_by_id(id):
     try:
-            company = company_logic.get_company_by_id_logic(id)
-            return jsonify(company),200
+        response, status = company_logic.get_company_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
+
 
 @app.route("/companies/<int:id>/update", methods=["PUT"])
 def update_company(id):
     try:
-        data=request.get_json()
-        company = company_logic.update_company_logic(id, data)
-        return jsonify(company),200
+        data = request.get_json()
+        response, status = company_logic.update_company_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
 
 
 @app.route("/companies/<int:id>/delete",methods=["DELETE"])
 def delete_company(id):
     try:
-
-            company = company_logic.delete_company_logic(id)
-            # converting sqlalchemy's returning to a dictionary
-            return jsonify(company),200
+        response, status = company_logic.delete_company_logic(id)
+        return jsonify(response), status
     except Exception as error:
-         return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
 
 
 # ============ category ============
@@ -70,38 +63,28 @@ def delete_company(id):
 @app.route("/categories/create",methods=["POST"])
 def create_category():
     try:
-            data = request.get_json()
-            category = category_logic.create_category_logic(data.get("id"), data.get("name"))
-            return jsonify(category),201
-
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": "id is a required field"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = category_logic.create_category_logic(**data)
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
 
     
 @app.route("/categories",methods=["GET"])
 def list_categories():
     try:
-        categories = category_logic.category_list_logic()
-        return jsonify(categories),200
+        response, status = category_logic.list_categories_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
 
 @app.route("/categories/<int:id>",methods=["GET"])
 def get_category_by_id(id):
     try:
-        with SessionLocal() as db:
-            category = category_logic.get_category_by_id_logic(id)
-            if not category:
-                return jsonify({"error": f"category with id {id} not found"})
-            return jsonify(category),200
+        response, status = category_logic.get_category_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
 
 @app.route("/categories/<int:id>/update",methods=["PUT"])
 def update_category(id):
@@ -115,756 +98,456 @@ def update_category(id):
 @app.route("/categories/<int:id>/delete", methods=["DELETE"])
 def delete_category(id):
     try:
-        category = category_logic.delete_category_logic(id)
-        return jsonify(category),200
+        response, status = category_logic.delete_category_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
     
 
 # ============ product ============
 
-@app.route("/products/create",methods=["POST"])
+@app.route("/products/create", methods=["POST"])
 def create_product():
     try:
-        with SessionLocal() as db :
-            data = request.get_json()
-
-            # first check relationship category exists
-            category = crud.get_category_by_id(db,data.get("category_id"))
-            if not category:
-                return jsonify({"error": f"category with id {data.get("category_id")} not found"}),400
-            
-            # second check relationship company exists
-            company = crud.get_company_by_id(db,data.get("company_id"))
-            if not company:
-                return jsonify({"error": f"company with id {data.get("company_id")} not found"}),400
-            
-            # third if all pass, create product and commit to database
-            product = crud.create_product(db,data.get("id"),data.get("name"),data.get("price"),data.get("description"),data.get("category_id"),data.get("stock_quantity"),data.get("company_id"))
-            
-            # converting sqlalchemy's returning to a dictionary
-            keys =["id","name","price","description","category_id","stock_quantity","company_id","company","category"]
-            values = product[0]
-            dictionary = services.generate_response(keys, values,"Product Created",201)
-            # return dictionary in json format to response
-            return jsonify(dictionary),201
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": "id is a required field"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = product_logic.create_product_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/products",methods=["GET"])
-def product_list():
+
+@app.route("/products", methods=["GET"])
+def list_products():
     try:
-        with SessionLocal() as db:
-            products = crud.product_list(db)
-            return jsonify([product.to_dict() for product in products]),200
+        response, status = product_logic.product_list_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
-    
+        return jsonify({"error": f"{error}"}), 400
+
+
 @app.route("/products/<int:id>", methods=["GET"])
 def get_product_by_id(id):
     try:
-        with SessionLocal() as db:
-            product = crud.get_product_by_id(db,id)
-            if not product:
-                return jsonify({"error":f"product id={id} not found"})
-            return jsonify(product.to_dict()),200
+        response, status = product_logic.get_product_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"Error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
 
-@app.route("/products/<int:id>/update",methods=["PUT"])
+@app.route("/products/<int:id>/update", methods=["PUT"])
 def update_product(id):
     try:
-        with SessionLocal() as db :
-            data = request.get_json()
-            product = crud.update_product(db,id,**data)
-            if not product:
-                return jsonify({"error":"id is required"}),400
-            # converting sqlalchemy's returning to a dictionary     
-            keys =["id","name","price","description","category_id","stock_quantity","company_id"]
-            values = product[0]
-            dictionary = services.generate_response(keys, values,"Product Updated",200)
-            # return dictionary in json format to response
-            return jsonify(dictionary),200
-                 
+        data = request.get_json()
+        response, status = product_logic.update_product_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/products/<int:id>/delete",methods=["DELETE"])
+
+@app.route("/products/<int:id>/delete", methods=["DELETE"])
 def delete_product(id):
     try:
-        with SessionLocal() as db:
-            product = crud.delete_product(db,id)
-            if not product:
-                return jsonify({"error":"product not found"}),400 
-            keys =["id","name","price","description","category_id","stock_quantity","company_id"]
-            values = product[0]
-            dictionary = services.generate_response(keys, values,"Product Deleted",200)
-            return jsonify(dictionary),200
+        response, status = product_logic.delete_product_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
     
 
 # ============ user ============
-    
-@app.route("/users/create",methods=["POST"])
+@app.route("/users/create", methods=["POST"])    
 def create_user():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            user = crud.create_user(db,data.get("id"),data.get("full_name"),data.get("email"),data.get("password"),data.get("phone"))    
-            keys =["id","full_name","email","password","phone"]
-            values = user[0]
-            dictionary = services.generate_response(keys, values,"User Created",201)
-            return jsonify(dictionary),201
-        
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = user_logic.create_user_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/users",methods=["GET"])
-def users_list():
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/users", methods=["GET"])
+def list_users():
     try:
-        with SessionLocal() as db:
-            users = crud.user_list(db)
-            return jsonify([user.to_dict() for user in users]),200
+        response, status = user_logic.list_users_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/users/<int:id>",methods=["GET"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/users/<int:id>", methods=["GET"])
 def get_user_by_id(id):
     try:
-        with SessionLocal() as db:
-            user = crud.get_user_by_id(db,id)
-            if not user:
-                return jsonify({"error":f"user id={id} not found"})
-            return jsonify(user.to_dict()),200
+        response, status = user_logic.get_user_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/users/<int:id>/update",methods=["PUT"])
+@app.route("/users/<int:id>/update", methods=["PUT"])
 def update_user(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            user = crud.update_user(db,id,**data)
-            if not user:
-                return jsonify({"error":f"id is required"})
-            keys=["id","full_name","email","password","phone"]
-            values = user[0]
-            dictionary = services.generate_response(keys,values,"User Updated",200)
-            return jsonify(dictionary),200
-
+        data = request.get_json()
+        response, status = user_logic.update_user_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/users/<int:id>/delete",methods=["DELETE"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/users/<int:id>/delete", methods=["DELETE"])
 def delete_user(id):
     try:
-        with SessionLocal() as db:
-            user = crud.delete_user(db,id)
-            if not user:
-                return jsonify({"error":f"User not found"})
-            keys=["id","full_name","email","password","phone"]
-            values = user[0]
-            dictionary = services.generate_response(keys,values,"User Deleted",200)
-            return jsonify(dictionary),200
-
+        response, status = user_logic.delete_user_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
     
 # ============ address ============
 
-@app.route("/addresses/create",methods=["POST"])
+@app.route("/addresses/create", methods=["POST"])
 def create_address():
-    try: 
-        with SessionLocal() as db:
-            data = request.get_json()
-            address = crud.create_address(db,data.get("id"),data.get("street_address"),data.get("state"),data.get("postal_code"),data.get("country"),data.get("user_id"))
-            keys = ["id","street_address","state","postal_code","country","user_id"]
-            values = address[0]
-            dictionary = services.generate_response(keys,values,"Address Created",200)
-            return jsonify(dictionary),200
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
-    except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/addresses",methods=["GET"])
-def address_list():
     try:
-        with SessionLocal() as db:
-            addresses = crud.address_list(db)
-            return jsonify([address.to_dict() for address in addresses]),200
+        data = request.get_json()
+        response, status = address_logic.create_address_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/addresses/<int:id>",methods=["GET"])
+@app.route("/addresses", methods=["GET"])
+def list_addresses():
+    try:
+        response, status = address_logic.list_addresses_logic()
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/addresses/<int:id>", methods=["GET"])
 def get_address_by_id(id):
     try:
-        with SessionLocal() as db:
-            address = crud.get_address_by_id(db,id)
-            if not address:
-                return jsonify({"error":f"address id={id} not found"})
-            return jsonify(address.to_dict()),200
+        response, status = address_logic.get_address_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/addresses/<int:id>/update",methods=["PUT"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/addresses/<int:id>/update", methods=["PUT"])
 def update_address(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            address = crud.update_address(db,id,**data)
-            if not address:
-                return jsonify({"error":f"id is required"}),400
-            keys = ["id","street_address","state","postal_code","country","user_id"]
-            values = address[0]
-            dictionary = services.generate_response(keys,values,"Address Updated",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = address_logic.update_address_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/addresses/<int:id>/delete",methods=["DELETE"])
+@app.route("/addresses/<int:id>/delete", methods=["DELETE"])
 def delete_address(id):
     try:
-        with SessionLocal() as db:
-            address = crud.delete_address(db,id)
-            if not address:
-                jsonify({"error":"id is required"}),400
-            keys = ["id","street_address","state","postal_code","country","user_id"]
-            values = address[0]
-            dictionary=services.generate_response(keys,values,"Address Deleted",200)
-            return jsonify(dictionary),200
+        response, status = address_logic.delete_address_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
+    
 
 # ============ cart ============
 
-@app.route("/cart/create",methods=["POST"])
+@app.route("/carts/create", methods=["POST"])
 def create_cart():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            cart = crud.create_cart(db,data.get("id"),data.get("user_id"))
-            keys=["id","user_id"]
-            values = cart[0]
-            dictionary = services.generate_response(keys,values,"Cart Created",200)
-            return jsonify(dictionary),200
-
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = cart_logic.create_cart_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/cart",methods=["GET"])
-def cart_list():
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/carts", methods=["GET"])
+def list_carts():
     try:
-        with SessionLocal() as db:
-            carts = crud.cart_list(db)
-            return jsonify([cart.to_dict() for cart in carts]),200
+        response, status = cart_logic.list_carts_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/cart/<int:id>",methods=["GET"])
+@app.route("/carts/<int:id>", methods=["GET"])
 def get_cart_by_id(id):
     try:
-        with SessionLocal() as db:
-            cart = crud.get_cart_by_id(db,id)
-            if not cart:
-                return jsonify({"error":f"cart id={id} not found"})
-            return jsonify(cart.to_dict()),200    
+        response, status = cart_logic.get_cart_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/cart/<int:id>/update",methods=["PUT"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/carts/<int:id>/update", methods=["PUT"])
 def update_cart(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            cart = crud.update_cart(db,id,**data)
-            if not cart:
-                return jsonify({"error":f"cart id={id} not found"})
-            keys=["id","user_id"]
-            values = cart[0]
-            dictionary = services.generate_response(keys,values,"Cart Updated",200)
-            return jsonify(dictionary),200            
-
+        data = request.get_json()
+        response, status = cart_logic.update_cart_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/cart/<int:id>/delete",methods=["DELETE"])
+@app.route("/carts/<int:id>/delete", methods=["DELETE"])
 def delete_cart(id):
     try:
-        with SessionLocal() as db:
-            cart = crud.delete_cart(db,id)
-            if not cart:
-                return jsonify({"error":f"cart id={id} not found"})
-            keys=["id","user_id"]
-            values = cart[0]
-            dictionary = services.generate_response(keys,values,"Cart Deleted",200)
-            return jsonify(dictionary),200
+        response, status = cart_logic.delete_cart_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400            
+        return jsonify({"error": f"{error}"}), 400          
 
 # ============ cart_item ============
 
-@app.route("/cart_items/create",methods=["POST"])
+@app.route("/cart_items/create", methods=["POST"])
 def create_cart_item():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            cart_item = crud.create_cart_item(db,data.get("id"),data.get("quantity"),data.get("product_id"),data.get("cart_id"))
-            keys=["id","quantity","product_id","cart_id"]
-            values =cart_item[0]
-            dictionary = services.generate_response(keys,values,"Cart Item Created",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = cart_item_logic.create_cart_item_logic(**data)
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
 
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
-    except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/cart_items",methods=["GET"])
-def cart_items_list():
+@app.route("/cart_items", methods=["GET"])
+def list_cart_items():
     try:
-        with SessionLocal() as db:
-            cart_items = crud.cart_item_list(db)
-            return jsonify([cart_item.to_dict() for cart_item in cart_items]),200
+        response, status = cart_item_logic.list_cart_items_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/cart_items/<int:id>",methods=["GET"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/cart_items/<int:id>", methods=["GET"])
 def get_cart_item_by_id(id):
     try:
-        with SessionLocal() as db:
-            cart_item = crud.get_cart_item_by_id(db,id)
-            if not cart_item:
-                return jsonify({"error":f"cart item id={id} not found"}),400
-            return jsonify(cart_item.to_dict()),200
+        response, status = cart_item_logic.get_cart_item_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/cart_items/<int:id>/update",methods=["PUT"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/cart_items/<int:id>/update", methods=["PUT"])
 def update_cart_item(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            cart_item = crud.update_cart_item(db,id,**data)
-            if not cart_item:
-                return jsonify({"error":f"cart item id={id} not found"}),400
-            keys=["id","quantity","product_id","cart_id"]
-            values =cart_item[0]
-            dictionary = services.generate_response(keys,values,"Cart Item Updated",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = cart_item_logic.update_cart_item_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/cart_items/<int:id>/delete",methods=["DELETE"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/cart_items/<int:id>/delete", methods=["DELETE"])
 def delete_cart_item(id):
     try:
-        with SessionLocal() as db:
-            cart_item = crud.delete_cart_item(db,id)
-            if not cart_item:
-                return jsonify({"error":f"cart item id={id} not found"})
-            keys=["id","quantity","product_id","cart_id"]
-            values =cart_item[0]
-            dictionary = services.generate_response(keys,values,"Cart item Deleted",200)
-            return jsonify(dictionary),200
+        response, status = cart_item_logic.delete_cart_item_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"})
+        return jsonify({"error": f"{error}"}), 400
 
 
 # ============ payment_method ============
 
-@app.route("/payment_methods/create",methods=["POST"])
+@app.route("/payment_methods/create", methods=["POST"])
 def create_payment_method():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            payment_method = crud.create_payment_method(db,data.get("id"),data.get("card_number"),data.get("cvv"),data.get("expire_date"),data.get("card_holder_name"),data.get("user_id"))
-            keys = ["id","card_number","cvv","expire_date","card_holder_name","user_id"]
-            values = payment_method[0]
-            dictionary = services.generate_response(keys,values,"Payment Method Created",200)
-            return jsonify(dictionary),200
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = payment_method_logic.create_payment_method_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/payment_methods",methods=["GET"])
-def payment_method_list():
+@app.route("/payment_methods", methods=["GET"])
+def list_payment_methods():
     try:
-        with SessionLocal() as db:
-            payment_methods = crud.payment_method_list(db)
-            return jsonify([payment_method.to_dict() for payment_method in payment_methods]),200
+        response, status = payment_method_logic.list_payment_methods_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/payment_methods/<int:id>",methods=["GET"])
-def get_payment_method_by_id(id):
+@app.route("/payment_methods/<int:id>", methods=["GET"])
+def get_payment_method(id):
     try:
-        with SessionLocal() as db:
-            payment_method=crud.get_payment_method_by_id(db,id)
-            if not payment_method:
-                return jsonify({"error":f"payment method id={id} not found"}),400
-            return jsonify(payment_method.to_dict()),200
+        response, status = payment_method_logic.get_payment_method_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/payment_methods/<int:id>/update",methods=["PUT"])
+@app.route("/payment_methods/<int:id>/update", methods=["PUT"])
 def update_payment_method(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            payment_method = crud.update_payment_method(db,id,**data)
-            if not payment_method:
-                return jsonify({"error":f"payment method id={id} not found"}),400
-            keys = ["id","card_number","cvv","expire_date","card_holder_name","user_id"]
-            values = payment_method[0]
-            dictionary=services.generate_response(keys,values,"Payment Method Updated",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = payment_method_logic.update_payment_method_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/payment_methods/<int:id>/delete",methods=["DELETE"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/payment_methods/<int:id>/delete", methods=["DELETE"])
 def delete_payment_method(id):
     try:
-        with SessionLocal() as db:
-            payment_method = crud.delete_payment_method(db,id)
-            if not payment_method:
-                return jsonify({"error":f"payment method id={id} not found"}),400
-            keys = ["id","card_number","cvv","expire_date","card_holder_name","user_id"]
-            values = payment_method[0]
-            dictionary=services.generate_response(keys,values,"Payment Method Deleted",200)
-            return jsonify(dictionary),200
+        response, status = payment_method_logic.delete_payment_method_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
     
 
 # ============ order ============
-@app.route("/orders/create",methods=["POST"])
+
+@app.route("/orders/create", methods=["POST"])
 def create_order():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            order = crud.create_order(db,id=data.get("id"),created_at=data.get("created_at"),user_id=data.get("user_id"),payment_method_id=data.get("payment_method_id"))
-            keys= ["id","created_at","user_id","payment_method_id"]
-            values = order[0]
-            dictionary = services.generate_response(keys,values,"Order Created",200)
-            return jsonify(dictionary),200
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = order_logic.create_order_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders",methods=["GET"])
-def order_list():
+@app.route("/orders", methods=["GET"])
+def list_orders():
     try:
-        with SessionLocal() as db:
-            orders = crud.order_list(db)
-            return jsonify([order.to_dict() for order in orders]),200
+        response, status = order_logic.list_orders_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders/<int:id>",methods=["GET"])
-def get_order_by_id(id):
+@app.route("/orders/<int:id>", methods=["GET"])
+def get_order(id):
     try:
-        with SessionLocal() as db:
-            order = crud.get_order_by_id(db,id)
-            if not order:
-                return jsonify({"error":f"order id={id} not found"}),400
-            return jsonify(order.to_dict()),200
+        response, status = order_logic.get_order_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders/<int:id>/update",methods=["PUT"])
+@app.route("/orders/<int:id>/update", methods=["PUT"])
 def update_order(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            order = crud.update_order(db,id, **data)
-            if not order:
-                return jsonify({"error":f"order id={id} not found"}),400
-            keys= ["id","created_at","user_id","payment_method_id"]
-            values = order[0]
-            dictionary = services.generate_response(keys,values,"Order Updated",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = order_logic.update_order_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders/<int:id>/delete",methods=["DELETE"])
+@app.route("/orders/<int:id>/delete", methods=["DELETE"])
 def delete_order(id):
     try:
-        with SessionLocal() as db:
-            order = crud.delete_order(db,id)
-            if not order:
-                return jsonify({"error":f"order id={id} not found"}),400
-            keys= ["id","created_at","user_id","payment_method_id"]
-            values = order[0]
-            dictionary = services.generate_response(keys,values,"Order Deleted",200)
-            return jsonify(dictionary),200
+        response, status = order_logic.delete_order_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400       
+        return jsonify({"error": f"{error}"}), 400     
 
 # ============ order_item ============
 
-@app.route("/order_items/create",methods=["POST"])
+@app.route("/order_items/create", methods=["POST"])
 def create_order_item():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            order_item = crud.create_order_item(db,data.get("id"),data.get("quantity"),data.get("price_at_purchase"),data.get("order_id"),data.get("product_id"))
-            keys=["id","quantity","price_at_purchase","order_id","product_id"]
-            values = order_item[0]
-            dictionary = services.generate_response(keys,values,"Order Item Created",200)
-            return jsonify(dictionary),200
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = order_item_logic.create_order_item_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/order_items",methods=["GET"])
-def order_items_list():
-    try:
-        with SessionLocal() as db:
-            order_items = crud.order_item_list(db)
-            return jsonify([order_item.to_dict() for order_item in order_items]),200
-    except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/order_items/<int:id>",methods=["GET"])
-def get_order_item_by_id(id):
+@app.route("/order_items", methods=["GET"])
+def list_order_items():
     try:
-        with SessionLocal() as db:
-            order_item = crud.get_order_item_by_id(db,id)
-            if not order_item:
-                return jsonify({"error":"Order Item id={id} not found"}),400
-            return jsonify(order_item.to_dict()),200
+        response, status = order_item_logic.list_order_items_logic()
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/order_items/<int:id>/update",methods=["PUT"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/order_items/<int:id>", methods=["GET"])
+def get_order_item(id):
+    try:
+        response, status = order_item_logic.get_order_item_by_id_logic(id)
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/order_items/<int:id>/update", methods=["PUT"])
 def update_order_item(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            order_item = crud.update_order_item(db,id,**data)
-            if not order_item:
-                return jsonify({"error":f"order item id={id} not found"}),400
-            keys=["id","quantity","price_at_purchase","order_id","product_id"]
-            values = order_item[0]
-            dictionary = services.generate_response(keys,values,"Order Item Updated",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = order_item_logic.update_order_item_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/order_items/<int:id>/delete",methods=["DELETE"])
+@app.route("/order_items/<int:id>/delete", methods=["DELETE"])
 def delete_order_item(id):
     try:
-        with SessionLocal() as db:
-            order_item = crud.delete_order_item(db,id)
-            if not order_item:
-                return jsonify({"error":"order_item id={id} not found"}),400
-            keys=["id","quantity","price_at_purchase","order_id","product_id"]
-            values = order_item[0]
-            dictionary = services.generate_response(keys,values,"Order Item Deleted",200)
-            return jsonify(dictionary),200
+        response, status = order_item_logic.delete_order_item_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
     
 # ============ shipping ============
 
-@app.route("/shipping/create",methods=["POST"])
+
+@app.route("/shippings/create", methods=["POST"])
 def create_shipping():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            shipping = crud.create_shipping(db,data.get("id"),data.get("tracking_number"),data.get("shipping_method"),data.get("status"),data.get("order_id"))
-            keys=["id","tracking_number","shipping_method","status","order_id"]
-            values = shipping[0]
-            dictionary = services.generate_response(keys,values,"Shipping Created",200)
-            return jsonify(dictionary),200
-        
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = shipping_logic.create_shipping_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/shipping",methods=["GET"])
-def shipping_list():
-    try:
-        with SessionLocal() as db:
-            shipping_list = crud.shipping_list(db)
-            return jsonify([shipping.to_dict() for shipping in shipping_list]),200
-    except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/shipping/<int:id>",methods=["GET"])
-def get_shipping_by_id(id):
-    try:
-        with SessionLocal() as db:
-            shipping = crud.get_shipping_by_id(db,id)
-            if not shipping:
-                return jsonify({"error":"Shipping id={id} not found"}),400
-            return jsonify(shipping.to_dict()),200
-    except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/shipping/<int:id>/update",methods=["PUT"])
+@app.route("/shippings", methods=["GET"])
+def list_shippings():
+    try:
+        response, status = shipping_logic.list_shippings_logic()
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/shippings/<int:id>", methods=["GET"])
+def get_shipping(id):
+    try:
+        response, status = shipping_logic.get_shipping_by_id_logic(id)
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/shippings/<int:id>/update", methods=["PUT"])
 def update_shipping(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            shipping = crud.update_shipping(db,id,**data)
-            if not shipping:
-                return jsonify({"error":"Shipping id={id} not found"}),400
-            keys=["id","tracking_number","shipping_method","status","order_id"]
-            values = shipping[0]
-            dictionary = services.generate_response(keys,values,"Shipping Updated",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = shipping_logic.update_shipping_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/shipping/<int:id>/delete",methods=["DELETE"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/shippings/<int:id>/delete", methods=["DELETE"])
 def delete_shipping(id):
     try:
-        with SessionLocal() as db:
-            shipping = crud.delete_shipping(db,id)
-            if not shipping:
-                return jsonify({"error":"Shipping id={id} not found"}),400
-            keys=["id","tracking_number","shipping_method","status","order_id"]
-            values = shipping[0]
-            dictionary = services.generate_response(keys, values, "Shipping Deleted",200)
-            return jsonify(dictionary),200
+        response, status = shipping_logic.delete_shipping_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
     
 # ============ invoice ============
 
-@app.route("/invoices/create",methods=["POST"])
+@app.route("/invoices/create", methods=["POST"])
 def create_invoice():
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            invoice = crud.create_invoice(db,data.get("id"),data.get("total_price"),data.get("payment_status"),data.get("created_at"),data.get("paid_at"),data.get("order_id"))
-            keys=["id","total_price","payment_status","created_at","paid_at","order_id"]
-            values = invoice[0]
-            dictionary = services.generate_response(keys,values,"Invoice Created",200)
-            return jsonify(dictionary),200
-    except IntegrityError as integrityError:
-        error_msg = str(integrityError.orig).lower()
-        if "unique constraint" in error_msg or "duplicate key value" in error_msg:
-            return jsonify({"error": f"id={data.get("id")} already exists"}), 409
-        elif "not-null constraint" in error_msg:
-            return jsonify({"error": f"id is a required field {error_msg}"}), 400
-        else:
-            return jsonify({"error": f"{error_msg}"}),400
+        data = request.get_json()
+        response, status = invoice_logic.create_invoice_logic(**data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/invoices",methods=["GET"])
-def invoices_list():
-    try:
-        with SessionLocal() as db:
-            invoices = crud.invoice_list(db)
-            return jsonify([invoice.to_dict() for invoice in invoices]),200
-    except Exception as error:
-        return jsonify({"error":f"{error}"}),400  
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/invoices/<int:id>",methods=["GET"])
+@app.route("/invoices", methods=["GET"])
+def list_invoices():
+    try:
+        response, status = invoice_logic.list_invoices_logic()
+        return jsonify(response), status
+    except Exception as error:
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/invoices/<int:id>", methods=["GET"])
 def get_invoice_by_id(id):
     try:
-        with SessionLocal() as db:
-            invoice = crud.get_invoice_by_id(db,id)
-            if not invoice:
-                return jsonify({"error":"Invoice id={id} not found"}),400
-            return jsonify(invoice.to_dict()),200
+        response, status = invoice_logic.get_invoice_by_id_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
-    
-@app.route("/invoices/<int:id>/update",methods=["PUT"])
+        return jsonify({"error": f"{error}"}), 400
+
+@app.route("/invoices/<int:id>/update", methods=["PUT"])
 def update_invoice(id):
     try:
-        with SessionLocal() as db:
-            data = request.get_json()
-            invoice = crud.update_invoice(db,id,**data)
-            if not invoice:
-                return jsonify({"error":"Invoice id={id} not found"}),400
-            keys=["id","total_price","payment_status","created_at","paid_at","order_id"]
-            values = invoice[0]
-            dictionary = services.generate_response(keys,values,"Invoice Updated",200)
-            return jsonify(dictionary),200
+        data = request.get_json()
+        response, status = invoice_logic.update_invoice_logic(id, **data)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
 
-@app.route("/invoices/<int:id>/delete",methods=["DELETE"])
+@app.route("/invoices/<int:id>/delete", methods=["DELETE"])
 def delete_invoice(id):
     try:
-        with SessionLocal() as db:
-            invoice = crud.delete_invoice(db,id)
-            if not invoice:
-               return jsonify({"error":"Invoice id={id} not found"}),400 
-            keys=["id","total_price","payment_status","created_at","paid_at","order_id"]
-            values = invoice[0]
-            dictionary = services.generate_response(keys,values,"Invoice Deleted",200)
-            return jsonify(dictionary),200
+        response, status = invoice_logic.delete_invoice_logic(id)
+        return jsonify(response), status
     except Exception as error:
-        return jsonify({"error":f"{error}"}),400
+        return jsonify({"error": f"{error}"}), 400
