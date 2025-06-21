@@ -455,7 +455,7 @@ def update_order_item(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@apapi_flaskp.route("/order_items/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/order_items/<int:id>/delete", methods=["DELETE"])
 def delete_order_item(id):
     try:
         response, status = order_item_logic.delete_order_item_logic(id)
