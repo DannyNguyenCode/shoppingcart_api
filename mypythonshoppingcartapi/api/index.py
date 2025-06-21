@@ -1,11 +1,16 @@
-from app.api import app
-from flask import Flask
+from app.api import api_flask
+from flask import Flask,jsonify
 from app.swaggerapi import swaggerapp
 
-application = Flask(__name__)
+app = Flask(__name__)
 
-application.register_blueprint(app, url_prefix="/api")
-application.register_blueprint(swaggerapp, url_prefix="/docs")
+app.register_blueprint(api_flask, url_prefix="/api")
+app.register_blueprint(swaggerapp, url_prefix="/docs")
+
+
+@app.route("/")
+def hello():
+    return jsonify(message="Hello from Flask on Vercel!")
 
 if __name__ == "__main__":
-    application.run(debug=True)
+    app.run(debug=True)
