@@ -22,7 +22,7 @@ def create_product_logic(id: int, name: str, price: float, description: str, cat
         return {"error": f"{error}"}, 400
 
 
-def product_list_logic():
+def list_products_logic():
     try:
         with SessionLocal() as db:
             products = crud.product_list(db)
