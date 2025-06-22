@@ -5,12 +5,12 @@ from app import crud, models,services
 from app.logic import company_logic,category_logic,product_logic,user_logic,address_logic,cart_logic,cart_item_logic,payment_method_logic,order_logic,order_item_logic,shipping_logic,invoice_logic
 
 models.Base.metadata.create_all(bind=engine)
-app = Blueprint("api", __name__)
+api_flask = Blueprint("api", __name__)
 
 # ============ company ============
 
 
-@app.route("/companies/create",methods=["POST"])
+@api_flask.route("/companies/create",methods=["POST"])
 def create_company():
     try:
         data = request.get_json()
@@ -21,7 +21,7 @@ def create_company():
 
 
 
-@app.route("/companies", methods=["GET"])
+@api_flask.route("/companies", methods=["GET"])
 def list_companies():
     try:
         response, status = company_logic.list_companies_logic()
@@ -29,7 +29,7 @@ def list_companies():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400 
 
-@app.route("/companies/<int:id>",methods=["GET"])
+@api_flask.route("/companies/<int:id>",methods=["GET"])
 def get_company_by_id(id):
     try:
         response, status = company_logic.get_company_by_id_logic(id)
@@ -38,7 +38,7 @@ def get_company_by_id(id):
         return jsonify({"error": f"{error}"}), 400
 
 
-@app.route("/companies/<int:id>/update", methods=["PUT"])
+@api_flask.route("/companies/<int:id>/update", methods=["PUT"])
 def update_company(id):
     try:
         data = request.get_json()
@@ -48,7 +48,7 @@ def update_company(id):
         return jsonify({"error": f"{error}"}), 400
 
 
-@app.route("/companies/<int:id>/delete",methods=["DELETE"])
+@api_flask.route("/companies/<int:id>/delete",methods=["DELETE"])
 def delete_company(id):
     try:
         response, status = company_logic.delete_company_logic(id)
@@ -60,7 +60,7 @@ def delete_company(id):
 # ============ category ============
 
 
-@app.route("/categories/create",methods=["POST"])
+@api_flask.route("/categories/create",methods=["POST"])
 def create_category():
     try:
         data = request.get_json()
@@ -70,7 +70,7 @@ def create_category():
         return jsonify({"error": f"{error}"}), 400
 
     
-@app.route("/categories",methods=["GET"])
+@api_flask.route("/categories",methods=["GET"])
 def list_categories():
     try:
         response, status = category_logic.list_categories_logic()
@@ -78,7 +78,7 @@ def list_categories():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/categories/<int:id>",methods=["GET"])
+@api_flask.route("/categories/<int:id>",methods=["GET"])
 def get_category_by_id(id):
     try:
         response, status = category_logic.get_category_by_id_logic(id)
@@ -86,7 +86,7 @@ def get_category_by_id(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/categories/<int:id>/update",methods=["PUT"])
+@api_flask.route("/categories/<int:id>/update",methods=["PUT"])
 def update_category(id):
     try:
         data=request.get_json()
@@ -95,7 +95,7 @@ def update_category(id):
     except Exception as error:
         return jsonify({"error":f"{error}"})
 
-@app.route("/categories/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/categories/<int:id>/delete", methods=["DELETE"])
 def delete_category(id):
     try:
         response, status = category_logic.delete_category_logic(id)
@@ -106,7 +106,7 @@ def delete_category(id):
 
 # ============ product ============
 
-@app.route("/products/create", methods=["POST"])
+@api_flask.route("/products/create", methods=["POST"])
 def create_product():
     try:
         data = request.get_json()
@@ -116,7 +116,7 @@ def create_product():
         return jsonify({"error": f"{error}"}), 400
 
 
-@app.route("/products", methods=["GET"])
+@api_flask.route("/products", methods=["GET"])
 def list_products():
     try:
         response, status = product_logic.product_list_logic()
@@ -125,7 +125,7 @@ def list_products():
         return jsonify({"error": f"{error}"}), 400
 
 
-@app.route("/products/<int:id>", methods=["GET"])
+@api_flask.route("/products/<int:id>", methods=["GET"])
 def get_product_by_id(id):
     try:
         response, status = product_logic.get_product_by_id_logic(id)
@@ -134,7 +134,7 @@ def get_product_by_id(id):
         return jsonify({"error": f"{error}"}), 400
 
 
-@app.route("/products/<int:id>/update", methods=["PUT"])
+@api_flask.route("/products/<int:id>/update", methods=["PUT"])
 def update_product(id):
     try:
         data = request.get_json()
@@ -144,7 +144,7 @@ def update_product(id):
         return jsonify({"error": f"{error}"}), 400
 
 
-@app.route("/products/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/products/<int:id>/delete", methods=["DELETE"])
 def delete_product(id):
     try:
         response, status = product_logic.delete_product_logic(id)
@@ -154,7 +154,7 @@ def delete_product(id):
     
 
 # ============ user ============
-@app.route("/users/create", methods=["POST"])    
+@api_flask.route("/users/create", methods=["POST"])    
 def create_user():
     try:
         data = request.get_json()
@@ -163,7 +163,7 @@ def create_user():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/users", methods=["GET"])
+@api_flask.route("/users", methods=["GET"])
 def list_users():
     try:
         response, status = user_logic.list_users_logic()
@@ -171,7 +171,7 @@ def list_users():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/users/<int:id>", methods=["GET"])
+@api_flask.route("/users/<int:id>", methods=["GET"])
 def get_user_by_id(id):
     try:
         response, status = user_logic.get_user_by_id_logic(id)
@@ -179,7 +179,7 @@ def get_user_by_id(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/users/<int:id>/update", methods=["PUT"])
+@api_flask.route("/users/<int:id>/update", methods=["PUT"])
 def update_user(id):
     try:
         data = request.get_json()
@@ -188,7 +188,7 @@ def update_user(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/users/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/users/<int:id>/delete", methods=["DELETE"])
 def delete_user(id):
     try:
         response, status = user_logic.delete_user_logic(id)
@@ -198,7 +198,7 @@ def delete_user(id):
     
 # ============ address ============
 
-@app.route("/addresses/create", methods=["POST"])
+@api_flask.route("/addresses/create", methods=["POST"])
 def create_address():
     try:
         data = request.get_json()
@@ -207,7 +207,7 @@ def create_address():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/addresses", methods=["GET"])
+@api_flask.route("/addresses", methods=["GET"])
 def list_addresses():
     try:
         response, status = address_logic.list_addresses_logic()
@@ -215,7 +215,7 @@ def list_addresses():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/addresses/<int:id>", methods=["GET"])
+@api_flask.route("/addresses/<int:id>", methods=["GET"])
 def get_address_by_id(id):
     try:
         response, status = address_logic.get_address_by_id_logic(id)
@@ -223,7 +223,7 @@ def get_address_by_id(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/addresses/<int:id>/update", methods=["PUT"])
+@api_flask.route("/addresses/<int:id>/update", methods=["PUT"])
 def update_address(id):
     try:
         data = request.get_json()
@@ -232,7 +232,7 @@ def update_address(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/addresses/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/addresses/<int:id>/delete", methods=["DELETE"])
 def delete_address(id):
     try:
         response, status = address_logic.delete_address_logic(id)
@@ -243,7 +243,7 @@ def delete_address(id):
 
 # ============ cart ============
 
-@app.route("/carts/create", methods=["POST"])
+@api_flask.route("/carts/create", methods=["POST"])
 def create_cart():
     try:
         data = request.get_json()
@@ -252,7 +252,7 @@ def create_cart():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/carts", methods=["GET"])
+@api_flask.route("/carts", methods=["GET"])
 def list_carts():
     try:
         response, status = cart_logic.list_carts_logic()
@@ -260,7 +260,7 @@ def list_carts():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/carts/<int:id>", methods=["GET"])
+@api_flask.route("/carts/<int:id>", methods=["GET"])
 def get_cart_by_id(id):
     try:
         response, status = cart_logic.get_cart_by_id_logic(id)
@@ -268,7 +268,7 @@ def get_cart_by_id(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/carts/<int:id>/update", methods=["PUT"])
+@api_flask.route("/carts/<int:id>/update", methods=["PUT"])
 def update_cart(id):
     try:
         data = request.get_json()
@@ -277,7 +277,7 @@ def update_cart(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/carts/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/carts/<int:id>/delete", methods=["DELETE"])
 def delete_cart(id):
     try:
         response, status = cart_logic.delete_cart_logic(id)
@@ -287,7 +287,7 @@ def delete_cart(id):
 
 # ============ cart_item ============
 
-@app.route("/cart_items/create", methods=["POST"])
+@api_flask.route("/cart_items/create", methods=["POST"])
 def create_cart_item():
     try:
         data = request.get_json()
@@ -296,7 +296,7 @@ def create_cart_item():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/cart_items", methods=["GET"])
+@api_flask.route("/cart_items", methods=["GET"])
 def list_cart_items():
     try:
         response, status = cart_item_logic.list_cart_items_logic()
@@ -304,7 +304,7 @@ def list_cart_items():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/cart_items/<int:id>", methods=["GET"])
+@api_flask.route("/cart_items/<int:id>", methods=["GET"])
 def get_cart_item_by_id(id):
     try:
         response, status = cart_item_logic.get_cart_item_by_id_logic(id)
@@ -312,7 +312,7 @@ def get_cart_item_by_id(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/cart_items/<int:id>/update", methods=["PUT"])
+@api_flask.route("/cart_items/<int:id>/update", methods=["PUT"])
 def update_cart_item(id):
     try:
         data = request.get_json()
@@ -321,7 +321,7 @@ def update_cart_item(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/cart_items/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/cart_items/<int:id>/delete", methods=["DELETE"])
 def delete_cart_item(id):
     try:
         response, status = cart_item_logic.delete_cart_item_logic(id)
@@ -332,7 +332,7 @@ def delete_cart_item(id):
 
 # ============ payment_method ============
 
-@app.route("/payment_methods/create", methods=["POST"])
+@api_flask.route("/payment_methods/create", methods=["POST"])
 def create_payment_method():
     try:
         data = request.get_json()
@@ -341,7 +341,7 @@ def create_payment_method():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/payment_methods", methods=["GET"])
+@api_flask.route("/payment_methods", methods=["GET"])
 def list_payment_methods():
     try:
         response, status = payment_method_logic.list_payment_methods_logic()
@@ -349,7 +349,7 @@ def list_payment_methods():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/payment_methods/<int:id>", methods=["GET"])
+@api_flask.route("/payment_methods/<int:id>", methods=["GET"])
 def get_payment_method(id):
     try:
         response, status = payment_method_logic.get_payment_method_by_id_logic(id)
@@ -357,7 +357,7 @@ def get_payment_method(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/payment_methods/<int:id>/update", methods=["PUT"])
+@api_flask.route("/payment_methods/<int:id>/update", methods=["PUT"])
 def update_payment_method(id):
     try:
         data = request.get_json()
@@ -366,7 +366,7 @@ def update_payment_method(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/payment_methods/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/payment_methods/<int:id>/delete", methods=["DELETE"])
 def delete_payment_method(id):
     try:
         response, status = payment_method_logic.delete_payment_method_logic(id)
@@ -377,7 +377,7 @@ def delete_payment_method(id):
 
 # ============ order ============
 
-@app.route("/orders/create", methods=["POST"])
+@api_flask.route("/orders/create", methods=["POST"])
 def create_order():
     try:
         data = request.get_json()
@@ -386,7 +386,7 @@ def create_order():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders", methods=["GET"])
+@api_flask.route("/orders", methods=["GET"])
 def list_orders():
     try:
         response, status = order_logic.list_orders_logic()
@@ -394,7 +394,7 @@ def list_orders():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders/<int:id>", methods=["GET"])
+@api_flask.route("/orders/<int:id>", methods=["GET"])
 def get_order(id):
     try:
         response, status = order_logic.get_order_by_id_logic(id)
@@ -402,7 +402,7 @@ def get_order(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders/<int:id>/update", methods=["PUT"])
+@api_flask.route("/orders/<int:id>/update", methods=["PUT"])
 def update_order(id):
     try:
         data = request.get_json()
@@ -411,7 +411,7 @@ def update_order(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/orders/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/orders/<int:id>/delete", methods=["DELETE"])
 def delete_order(id):
     try:
         response, status = order_logic.delete_order_logic(id)
@@ -421,7 +421,7 @@ def delete_order(id):
 
 # ============ order_item ============
 
-@app.route("/order_items/create", methods=["POST"])
+@api_flask.route("/order_items/create", methods=["POST"])
 def create_order_item():
     try:
         data = request.get_json()
@@ -430,7 +430,7 @@ def create_order_item():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/order_items", methods=["GET"])
+@api_flask.route("/order_items", methods=["GET"])
 def list_order_items():
     try:
         response, status = order_item_logic.list_order_items_logic()
@@ -438,7 +438,7 @@ def list_order_items():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/order_items/<int:id>", methods=["GET"])
+@api_flask.route("/order_items/<int:id>", methods=["GET"])
 def get_order_item(id):
     try:
         response, status = order_item_logic.get_order_item_by_id_logic(id)
@@ -446,7 +446,7 @@ def get_order_item(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/order_items/<int:id>/update", methods=["PUT"])
+@api_flask.route("/order_items/<int:id>/update", methods=["PUT"])
 def update_order_item(id):
     try:
         data = request.get_json()
@@ -455,7 +455,7 @@ def update_order_item(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/order_items/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/order_items/<int:id>/delete", methods=["DELETE"])
 def delete_order_item(id):
     try:
         response, status = order_item_logic.delete_order_item_logic(id)
@@ -466,7 +466,7 @@ def delete_order_item(id):
 # ============ shipping ============
 
 
-@app.route("/shippings/create", methods=["POST"])
+@api_flask.route("/shippings/create", methods=["POST"])
 def create_shipping():
     try:
         data = request.get_json()
@@ -475,7 +475,7 @@ def create_shipping():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/shippings", methods=["GET"])
+@api_flask.route("/shippings", methods=["GET"])
 def list_shippings():
     try:
         response, status = shipping_logic.list_shippings_logic()
@@ -483,7 +483,7 @@ def list_shippings():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/shippings/<int:id>", methods=["GET"])
+@api_flask.route("/shippings/<int:id>", methods=["GET"])
 def get_shipping(id):
     try:
         response, status = shipping_logic.get_shipping_by_id_logic(id)
@@ -491,7 +491,7 @@ def get_shipping(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/shippings/<int:id>/update", methods=["PUT"])
+@api_flask.route("/shippings/<int:id>/update", methods=["PUT"])
 def update_shipping(id):
     try:
         data = request.get_json()
@@ -500,7 +500,7 @@ def update_shipping(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/shippings/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/shippings/<int:id>/delete", methods=["DELETE"])
 def delete_shipping(id):
     try:
         response, status = shipping_logic.delete_shipping_logic(id)
@@ -510,7 +510,7 @@ def delete_shipping(id):
     
 # ============ invoice ============
 
-@app.route("/invoices/create", methods=["POST"])
+@api_flask.route("/invoices/create", methods=["POST"])
 def create_invoice():
     try:
         data = request.get_json()
@@ -519,7 +519,7 @@ def create_invoice():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/invoices", methods=["GET"])
+@api_flask.route("/invoices", methods=["GET"])
 def list_invoices():
     try:
         response, status = invoice_logic.list_invoices_logic()
@@ -527,7 +527,7 @@ def list_invoices():
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/invoices/<int:id>", methods=["GET"])
+@api_flask.route("/invoices/<int:id>", methods=["GET"])
 def get_invoice_by_id(id):
     try:
         response, status = invoice_logic.get_invoice_by_id_logic(id)
@@ -535,7 +535,7 @@ def get_invoice_by_id(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/invoices/<int:id>/update", methods=["PUT"])
+@api_flask.route("/invoices/<int:id>/update", methods=["PUT"])
 def update_invoice(id):
     try:
         data = request.get_json()
@@ -544,7 +544,7 @@ def update_invoice(id):
     except Exception as error:
         return jsonify({"error": f"{error}"}), 400
 
-@app.route("/invoices/<int:id>/delete", methods=["DELETE"])
+@api_flask.route("/invoices/<int:id>/delete", methods=["DELETE"])
 def delete_invoice(id):
     try:
         response, status = invoice_logic.delete_invoice_logic(id)
